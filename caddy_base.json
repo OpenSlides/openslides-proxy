@@ -113,23 +113,6 @@
             {
               "handle": [
                 {
-                  "handler": "reverse_proxy",
-                  "upstreams": [
-                    {
-                      "dial": "$KEYCLOAK_HOST:$KEYCLOAK_PORT"
-                    }
-                  ]
-                }
-              ],
-              "match": [
-                {
-                  "path": ["/system/auth*", "/system/saml*"]
-                }
-              ]
-            },
-            {
-              "handle": [
-                {
                   "flush_interval": -1,
                   "handler": "reverse_proxy",
                   "upstreams": [
@@ -189,10 +172,6 @@
             {
               "handle": [
                 {
-                  "handler": "rewrite",
-                  "strip_path_prefix": "/idp"
-                },
-                {
                   "handler": "reverse_proxy",
                   "upstreams": [
                     {
@@ -202,12 +181,8 @@
                   "headers": {
                     "request": {
                       "set": {
-                        "X-Forwarded-For": [
-                          "{http.request.remote.host}"
-                        ],
-                        "X-Forwarded-Proto": [
-                          "{http.request.scheme}"
-                        ]
+                        "X-Forwarded-Proto": ["https"],
+                        "X-Forwarded-Host": ["localhost:8000"]
                       }
                     }
                   }

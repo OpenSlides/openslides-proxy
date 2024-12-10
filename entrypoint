@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -e
 
@@ -7,20 +7,25 @@ base=/caddy_base.json
 HTTPS_CERT_FILE="${HTTPS_CERT_FILE:-/certs/cert.pem}"
 HTTPS_KEY_FILE="${HTTPS_KEY_FILE:-/certs/key.pem}"
 
+# remove endpoints if not set
+for ENDPOINT in ACTION_HOST PRESENTER_HOST AUTOUPDATE_HOST ICC_HOST SEARCH_HOST MEDIA_HOST MANAGE_HOST CLIENT_HOST VOTE_HOST KEYCLOAK_HOST; do
+   if [ -z "${!ENDPOINT}" ]; then
+     echo "Removing endpoint $ENDPOINT"
+     jq ".apps.http.servers.srv0.routes |= map(select(.handle | any(.upstreams[]?.dial | contains(\"$ENDPOINT\") | not)))" "$base" > "$base.out"
+     mv -f "$base.out" "$base"
+   fi
+done
+
 cp $base $config
 
-# set defaults in base
-ACTION_HOST="${ACTION_HOST:-backend}" ACTION_PORT="${ACTION_PORT:-9002}" \
-PRESENTER_HOST="${PRESENTER_HOST:-backend}" PRESENTER_PORT="${PRESENTER_PORT:-9003}" \
-AUTOUPDATE_HOST="${AUTOUPDATE_HOST:-autoupdate}" AUTOUPDATE_PORT="${AUTOUPDATE_PORT:-9012}" \
-ICC_HOST="${ICC_HOST:-icc}" ICC_PORT="${ICC_PORT:-9007}" \
-SEARCH_HOST="${SEARCH_HOST:-search}" SEARCH_PORT="${SEARCH_PORT:-9050}" \
-MEDIA_HOST="${MEDIA_HOST:-media}" MEDIA_PORT="${MEDIA_PORT:-9006}" \
-MANAGE_HOST="${MANAGE_HOST:-manage}" MANAGE_PORT="${MANAGE_PORT:-9008}" \
-CLIENT_HOST="${CLIENT_HOST:-client}" CLIENT_PORT="${CLIENT_PORT:-9001}" \
-VOTE_HOST="${VOTE_HOST:-vote}" VOTE_PORT="${VOTE_PORT:-9013}" \
-KEYCLOAK_HOST="${KEYCLOAK_URL:-keycloak}" \
-KEYCLOAK_PORT="${KEYCLOAK_URL:-8080}" \
+for var in $(grep -o '\$[A-Za-z_][A-Za-z0-9_]*' $config | sort | uniq | sed 's/\$//'); do
+    echo "Checking variable $var"
+    if [[ -z "${!var}" ]]; then
+        echo "Variable $var is not set"
+    fi
+done
+
+# substitute env vars
 envsubst < "$config" > "$config.out" && mv -f "$config.out" "$config"
 
 jq_write() {
