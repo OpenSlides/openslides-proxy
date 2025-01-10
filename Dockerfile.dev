@@ -1,6 +1,6 @@
 FROM caddy:2.3.0-alpine
 
-RUN apk update && apk add --no-cache jq gettext
+RUN apk update && apk add --no-cache jq gettext bash
 
 COPY caddy_base.json /caddy_base.json
 COPY entrypoint /entrypoint

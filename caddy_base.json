@@ -113,23 +113,6 @@
             {
               "handle": [
                 {
-                  "handler": "reverse_proxy",
-                  "upstreams": [
-                    {
-                      "dial": "$AUTH_HOST:$AUTH_PORT"
-                    }
-                  ]
-                }
-              ],
-              "match": [
-                {
-                  "path": ["/system/auth*", "/system/saml*"]
-                }
-              ]
-            },
-            {
-              "handle": [
-                {
                   "flush_interval": -1,
                   "handler": "reverse_proxy",
                   "upstreams": [
@@ -183,6 +166,33 @@
                   "header": {
                     "Content-Type": ["application/grpc"]
                   }
+                }
+              ]
+            },
+            {
+              "handle": [
+                {
+                  "handler": "reverse_proxy",
+                  "upstreams": [
+                    {
+                      "dial": "$KEYCLOAK_HOST:$KEYCLOAK_PORT"
+                    }
+                  ],
+                  "headers": {
+                    "request": {
+                      "set": {
+                        "X-Forwarded-Proto": ["https"],
+                        "X-Forwarded-Host": ["localhost:8000"]
+                      }
+                    }
+                  }
+                }
+              ],
+              "match": [
+                {
+                  "path": [
+                    "/idp/*"
+                  ]
                 }
               ]
             },
