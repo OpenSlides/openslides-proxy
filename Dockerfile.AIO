@@ -1,0 +1,42 @@
+ARG CONTEXT=dev
+ARG CADDY_IMAGE_VERSION=2.3.0
+
+FROM caddy:${CADDY_IMAGE_VERSION}-alpine as base
+
+ARG CONTEXT
+ARG CADDY_IMAGE_VERSION
+
+WORKDIR /app
+
+## Installs
+RUN apk update && apk add --no-cache jq gettext
+
+COPY caddy_base.json /caddy_base.json
+COPY entrypoint /entrypoint
+COPY certs /certs
+
+LABEL org.opencontainers.image.title="OpenSlides Proxy"
+LABEL org.opencontainers.image.description="The proxy is the entrypoint for traffic going into an OpenSlides instance."
+LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.source="https://github.com/OpenSlides/OpenSlides/tree/main/proxy"
+    
+
+ENTRYPOINT ["/entrypoint"]
+CMD ["caddy", "run", "--config", "/etc/caddy/config.json"]
+
+
+# Development Image
+
+FROM base as dev
+
+ENV ENABLE_LOCAL_HTTPS=1
+
+
+# Testing Image
+
+FROM base as tests
+
+
+# Production Image
+
+FROM base as prod
