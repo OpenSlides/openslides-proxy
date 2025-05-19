@@ -19,3 +19,6 @@ build-dev:
 	make build-aio context=dev submodule=proxy
 
 # docker build -t openslides-proxy-dev -f Dockerfile.dev .
+
+run-tests:
+	echo "Proxy has no tests"
