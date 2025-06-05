@@ -1,10 +1,8 @@
 ARG CONTEXT=prod
-ARG CADDY_IMAGE_VERSION=2.3.0
 
-FROM caddy:${CADDY_IMAGE_VERSION}-alpine as base
+FROM caddy:2.3.0-alpine as base
 
 ARG CONTEXT
-ARG CADDY_IMAGE_VERSION
 
 WORKDIR /app
 
