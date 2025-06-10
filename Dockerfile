@@ -11,7 +11,9 @@ WORKDIR /app
 ENV ${CONTEXT}=1
 
 ## Installs
-RUN apk update && apk add --no-cache jq gettext
+RUN apk update && apk add --no-cache \
+    jq \
+    gettext
 
 COPY caddy_base.json /caddy_base.json
 COPY entrypoint /entrypoint
