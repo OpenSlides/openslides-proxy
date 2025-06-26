@@ -7,8 +7,9 @@ ARG CONTEXT
 WORKDIR /app
 
 ## Context-based setup
-### Add context value as a helper env variable
-ENV ${CONTEXT}=1
+# Used for easy target differentiation
+ARG ${CONTEXT}=1 
+ENV APP_CONTEXT=${CONTEXT}
 
 ## Installs
 RUN apk update && apk add --no-cache \
