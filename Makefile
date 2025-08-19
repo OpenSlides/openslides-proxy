@@ -6,6 +6,7 @@ build-prod:
 	docker build ./ $(ARGS) --tag "openslides-$(SERVICE)" --build-arg CONTEXT="prod" --target "prod"
 
 build-dev:
+	./make-localhost-cert.sh
 	docker build ./ $(ARGS) --tag "openslides-$(SERVICE)-dev" --build-arg CONTEXT="dev" --target "dev"
 
 build-tests:
