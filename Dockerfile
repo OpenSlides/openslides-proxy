@@ -1,6 +1,6 @@
 ARG CONTEXT=prod
 
-FROM caddy:2.3.0-alpine as base
+FROM caddy:2.3.0-alpine AS base
 
 ## Setup
 ARG CONTEXT
@@ -30,17 +30,17 @@ CMD ["./command.sh"]
 
 # Development Image
 
-FROM base as dev
+FROM base AS dev
 
 ENV ENABLE_LOCAL_HTTPS=1
 
 # Testing Image
 
-FROM base as tests
+FROM base AS tests
 
 # Production Image
 
-FROM base as prod
+FROM base AS prod
 
 # Add appuser
 RUN adduser --system --no-create-home appuser && \
