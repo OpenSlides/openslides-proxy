@@ -48,6 +48,23 @@
                   "handler": "reverse_proxy",
                   "upstreams": [
                     {
+                      "dial": "$PROJECTOR_HOST:$PROJECTOR_PORT"
+                    }
+                  ]
+                }
+              ],
+              "match": [
+                {
+                  "path": ["/system/projector*"]
+                }
+              ]
+            },
+            {
+              "handle": [
+                {
+                  "handler": "reverse_proxy",
+                  "upstreams": [
+                    {
                       "dial": "$PRESENTER_HOST:$PRESENTER_PORT"
                     }
                   ]
