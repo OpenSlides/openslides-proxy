@@ -1,27 +1,30 @@
-# OpenSlides Proxy
+# OpenSlides Traefik Proxy Service
 
-The proxy - based on [caddy](https://hub.docker.com/_/caddy) - is the entrypoint
-for traffic going into an OpenSlides instance and hides all the services needed
-for production behind a single port. On the docker container this will be port
-8000 . An arbitrary port from the host can then be forwarded to that (e.g.
-443->8000).
+The OpenSlides Traefik proxy service is a reverse proxy based on [Traefik](https://traefik.io/) that
+routes all external traffic to the appropriate OpenSlides services.
 
-## HTTPS
+## Overview
 
-It is possible to make use of caddy's automatic https feature in order to not
-having to manually generate TLS certificates.
-Set `ENABLE_AUTO_HTTPS=1` and `EXTERNAL_ADDRESS=openslides.example.com` to
-activate it. Caddy will then retrieve a letsencrypt certificate for that
-domain.
-For testing a setup e.g.
-`ACME_ENDPOINT=https://acme-staging-v02.api.letsencrypt.org/directory` can also
-be set to avoid hitting rate limits.
-Importantly, port 80 on the host must be forwarded to port 8001 on which caddy
-will answer the ACME-challenge during certificate retrieval.
+This service:
 
-Alternatively a locally generated certificate can be used by setting
-`ENABLE_LOCAL_HTTPS=1 HTTPS_CERT_FILE=path/to/crt HTTPS_CERT_FILE=path/to/key`
-and providing cert and key files at the specified location. This is mostly for
-dev and testing setups and is not useful for a public domain as the cert is not
-issued by a trusted CA and therefore not trusted by browsers. If set, this
-overrules `ENABLE_AUTO_HTTPS`.
+- Provides HTTPS termination with self-signed certificates for development
+- Routes requests to appropriate microservices based on URL paths
+- Handles WebSocket connections for real-time features
+- Supports gRPC communication for the manage service
+
+## Configuration
+
+The proxy service is configured through:
+
+- `traefik.yml` - Static configuration
+- `entrypoint`  - Dynamic configuration generation based on environment variables
+
+### Environment Variables
+
+- `ENABLE_LOCAL_HTTPS` - Enable HTTPS with local certificates (default: 1 for dev)
+- `TRAEFIK_LOG_LEVEL` - Log level (default: INFO)
+- Service locations can be configured via `*_HOST` and `*_PORT` variables
+
+## License
+
+This service is part of OpenSlides and licensed under the MIT license.
