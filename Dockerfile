@@ -7,25 +7,25 @@ ARG CONTEXT
 WORKDIR /app
 ENV APP_CONTEXT=${CONTEXT}
 
-# Install required packages based on context
-RUN apk add --no-cache curl bash
+# curl for healthcheck, gettext for templating (envsubst)
+RUN apk add --no-cache curl gettext
 
 # Copy configuration files
 COPY traefik.yml /etc/traefik/traefik.yml
 COPY entrypoint /entrypoint
 COPY certs /certs
-COPY ./dev/command.sh ./
+COPY services /services
+COPY templates /templates
 
-# Create dynamic config directory and make scripts executable
+# Create dynamic config directory and make entrypoint executable
 RUN mkdir -p /etc/traefik/dynamic && \
-    chmod +x /entrypoint && \
-    chmod +x ./command.sh
+    chmod +x /entrypoint
 
 ## External Information
 LABEL org.opencontainers.image.title="OpenSlides Traefik Proxy"
 LABEL org.opencontainers.image.description="The Traefik proxy is the entrypoint for traffic going into an OpenSlides instance."
 LABEL org.opencontainers.image.licenses="MIT"
-LABEL org.opencontainers.image.source="https://github.com/OpenSlides/OpenSlides/tree/main/openslides-traefik-proxy"
+LABEL org.opencontainers.image.source="https://github.com/OpenSlides/OpenSlides/tree/main/openslides-proxy"
 
 ## Health check
 HEALTHCHECK --interval=30s --timeout=3s \
@@ -33,7 +33,6 @@ HEALTHCHECK --interval=30s --timeout=3s \
 
 ## Command
 ENTRYPOINT ["/entrypoint"]
-CMD ["./command.sh"]
 
 # Development Image
 FROM base as dev
@@ -73,7 +72,6 @@ FROM base as prod
 RUN adduser -S -D -H appuser
 RUN chown -R appuser /app/ && \
     chown -R appuser /etc/traefik/ && \
-    chown appuser /entrypoint && \
-    chown appuser ./command.sh
+    chown appuser /entrypoint
 
 USER appuser

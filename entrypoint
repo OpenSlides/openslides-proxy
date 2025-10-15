@@ -1,220 +1,89 @@
-#!/bin/bash
+#!/bin/sh
+# Co-authored-by: Claude <noreply@anthropic.com>
 
 set -e
 
-# Dynamic configuration directory
+# Configuration
 DYNAMIC_DIR="${DYNAMIC_DIR:-/etc/traefik/dynamic}"
 DYNAMIC_CONFIG="${DYNAMIC_DIR}/dynamic.yml"
+SERVICES_DIR="${SERVICES_DIR:-/services}"
 
-# Create dynamic directory if it doesn't exist
+# Create dynamic directory
 mkdir -p "$DYNAMIC_DIR"
 
-# Service definitions with their default hosts and ports
-declare -A SERVICES=(
-  ["action"]="ACTION_HOST:backend ACTION_PORT:9002 PATH:/system/action"
-  ["presenter"]="PRESENTER_HOST:backend PRESENTER_PORT:9003 PATH:/system/presenter"
-  ["autoupdate"]="AUTOUPDATE_HOST:autoupdate AUTOUPDATE_PORT:9012 PATH:/system/autoupdate"
-  ["icc"]="ICC_HOST:icc ICC_PORT:9007 PATH:/system/icc"
-  ["auth"]="AUTH_HOST:auth AUTH_PORT:9004 PATH:/system/auth,/system/saml"
-  ["search"]="SEARCH_HOST:search SEARCH_PORT:9050 PATH:/system/search"
-  ["media"]="MEDIA_HOST:media MEDIA_PORT:9006 PATH:/system/media"
-  ["manage"]="MANAGE_HOST:manage MANAGE_PORT:9008 GRPC:true"
-  ["vote"]="VOTE_HOST:vote VOTE_PORT:9013 PATH:/system/vote"
-  ["client"]="CLIENT_HOST:client CLIENT_PORT:9001 PATH:/ PRIORITY:1"
-)
+# Set default values and export for envsubst
+export ACTION_HOST="${ACTION_HOST:-backend}"
+export ACTION_PORT="${ACTION_PORT:-9002}"
+export PRESENTER_HOST="${PRESENTER_HOST:-backend}"
+export PRESENTER_PORT="${PRESENTER_PORT:-9003}"
+export AUTOUPDATE_HOST="${AUTOUPDATE_HOST:-autoupdate}"
+export AUTOUPDATE_PORT="${AUTOUPDATE_PORT:-9012}"
+export ICC_HOST="${ICC_HOST:-icc}"
+export ICC_PORT="${ICC_PORT:-9007}"
+export AUTH_HOST="${AUTH_HOST:-auth}"
+export AUTH_PORT="${AUTH_PORT:-9004}"
+export SEARCH_HOST="${SEARCH_HOST:-search}"
+export SEARCH_PORT="${SEARCH_PORT:-9050}"
+export MEDIA_HOST="${MEDIA_HOST:-media}"
+export MEDIA_PORT="${MEDIA_PORT:-9006}"
+export MANAGE_HOST="${MANAGE_HOST:-manage}"
+export MANAGE_PORT="${MANAGE_PORT:-9008}"
+export VOTE_HOST="${VOTE_HOST:-vote}"
+export VOTE_PORT="${VOTE_PORT:-9013}"
+export CLIENT_HOST="${CLIENT_HOST:-client}"
+export CLIENT_PORT="${CLIENT_PORT:-9001}"
 
-# Function to parse service configuration
-parse_service_config() {
-  local config="$1"
-  local -A params
-  
-  for item in $config; do
-    local key="${item%%:*}"
-    local value="${item#*:}"
-    params["$key"]="$value"
-  done
-  
-  echo "$(declare -p params)"
-}
-
-# Start building the dynamic configuration
+# Start building config
 cat > "$DYNAMIC_CONFIG" << 'EOF'
-# Dynamic configuration for OpenSlides services
 http:
   routers:
 EOF
 
-# Track which services are enabled
-ENABLED_SERVICES=()
+# Concatenate all enabled .router files
+for service in action presenter autoupdate icc auth search media manage vote client; do
+  service_upper=$(echo "$service" | tr '[:lower:]' '[:upper:]')
+  host_var="${service_upper}_HOST"
 
-# Generate routers for enabled services
-for service_name in "${!SERVICES[@]}"; do
-  eval "$(parse_service_config "${SERVICES[$service_name]}")"
-  
-  # Get the host environment variable name and check if it's set
-  host_var_name=""
-  for key in "${!params[@]}"; do
-    if [[ "$key" =~ _HOST$ ]]; then
-      host_var_name="$key"
-      break
-    fi
-  done
-  
-  # Check if the HOST environment variable is set
-  if [ -n "$host_var_name" ] && [ -n "${!host_var_name}" ]; then
-    echo "Enabling service: $service_name (${!host_var_name})" >&2
-    ENABLED_SERVICES+=("$service_name")
-    
-    # Export the host and port with their default values if not set
-    for key in "${!params[@]}"; do
-      if [[ "$key" =~ _HOST$ ]] || [[ "$key" =~ _PORT$ ]]; then
-        export "${key}=${!key:-${params[$key]}}"
-      fi
-    done
-    
-    # Generate router configuration
-    cat >> "$DYNAMIC_CONFIG" << EOF
-    # ${service_name^} service
-    ${service_name}:
-      rule: "$(
-        if [ "${params[GRPC]}" = "true" ]; then
-          echo "Header(\`Content-Type\`, \`application/grpc\`)"
-        elif [ -n "${params[PATH]}" ]; then
-          paths="${params[PATH]}"
-          IFS=',' read -ra PATH_ARRAY <<< "$paths"
-          if [ ${#PATH_ARRAY[@]} -eq 1 ]; then
-            echo "PathPrefix(\`${PATH_ARRAY[0]}\`)"
-          else
-            rule_parts=()
-            for path in "${PATH_ARRAY[@]}"; do
-              rule_parts+=("PathPrefix(\`$path\`)")
-            done
-            # Join array elements with " || "
-            result=""
-            for i in "${!rule_parts[@]}"; do
-              if [ $i -eq 0 ]; then
-                result="${rule_parts[$i]}"
-              else
-                result="$result || ${rule_parts[$i]}"
-              fi
-            done
-            echo "$result"
-          fi
-        fi
-      )"
-      service: ${service_name}
-      entryPoints:
-        - websecure
-EOF
-    
-    # Add priority if specified
-    if [ -n "${params[PRIORITY]}" ]; then
-      cat >> "$DYNAMIC_CONFIG" << EOF
-      priority: ${params[PRIORITY]}
-EOF
-    fi
-    
-    echo "" >> "$DYNAMIC_CONFIG"
-  else
-    echo "Skipping service: $service_name (HOST not set)" >&2
+  if env | grep -q "^${host_var}="; then
+    eval "echo \"Enabling: $service (\$${host_var})\"" >&2
+    envsubst < "$SERVICES_DIR/${service}.router" >> "$DYNAMIC_CONFIG"
   fi
 done
 
-# Generate services section
+# Add services section
 cat >> "$DYNAMIC_CONFIG" << 'EOF'
-        
+
   services:
 EOF
 
-# Generate service backends for enabled services
-for service_name in "${ENABLED_SERVICES[@]}"; do
-  eval "$(parse_service_config "${SERVICES[$service_name]}")"
-  
-  # Get host and port variable names
-  host_var=""
-  port_var=""
-  for key in "${!params[@]}"; do
-    if [[ "$key" =~ _HOST$ ]]; then
-      host_var="$key"
-    elif [[ "$key" =~ _PORT$ ]]; then
-      port_var="$key"
-    fi
-  done
-  
-  host_value="${!host_var}"
-  port_value="${!port_var}"
-  
-  # Determine protocol
-  protocol="http"
-  if [ "${params[GRPC]}" = "true" ]; then
-    protocol="h2c"
+# Concatenate all enabled .service files
+for service in action presenter autoupdate icc auth search media manage vote client; do
+  service_upper=$(echo "$service" | tr '[:lower:]' '[:upper:]')
+  host_var="${service_upper}_HOST"
+
+  if env | grep -q "^${host_var}="; then
+    envsubst < "$SERVICES_DIR/${service}.service" >> "$DYNAMIC_CONFIG"
   fi
-  
-  cat >> "$DYNAMIC_CONFIG" << EOF
-    # ${service_name^} service
-    ${service_name}:
-      loadBalancer:
-        servers:
-          - url: "${protocol}://${host_value}:${port_value}"
-        passHostHeader: true
-        
-EOF
 done
 
-# Handle HTTPS configuration for local development
+# Generate traefik.yml from template
+TRAEFIK_CONFIG="${TRAEFIK_CONFIG:-/etc/traefik/traefik.yml}"
+export DYNAMIC_DIR
+export TRAEFIK_LOG_LEVEL="${TRAEFIK_LOG_LEVEL:-INFO}"
+envsubst < /templates/traefik.yml > "$TRAEFIK_CONFIG"
+
+# Handle HTTPS for local development
 if [ -n "$ENABLE_LOCAL_HTTPS" ]; then
   HTTPS_CERT_FILE="${HTTPS_CERT_FILE:-/certs/cert.pem}"
   HTTPS_KEY_FILE="${HTTPS_KEY_FILE:-/certs/key.pem}"
-  
+
   if [ -f "$HTTPS_CERT_FILE" ] && [ -f "$HTTPS_KEY_FILE" ]; then
-    cat >> "$DYNAMIC_CONFIG" << EOF
-
-# TLS configuration for local development
-tls:
-  certificates:
-    - certFile: ${HTTPS_CERT_FILE}
-      keyFile: ${HTTPS_KEY_FILE}
-      stores:
-        - default
-  stores:
-    default:
-      defaultCertificate:
-        certFile: ${HTTPS_CERT_FILE}
-        keyFile: ${HTTPS_KEY_FILE}
-EOF
-    
-    # Update traefik.yml to enable HTTPS
-    TRAEFIK_CONFIG="${TRAEFIK_CONFIG:-/etc/traefik/traefik.yml}"
-    cat > "$TRAEFIK_CONFIG" << EOF
-# Traefik configuration for OpenSlides with HTTPS
-api:
-  dashboard: true
-  debug: true
-
-entryPoints:
-  websecure:
-    address: ":8000"
-    http:
-      tls: true
-
-providers:
-  file:
-    directory: ${DYNAMIC_DIR}
-    watch: true
-
-log:
-  level: ${TRAEFIK_LOG_LEVEL:-INFO}
-
-accessLog: {}
-
-serversTransport:
-  insecureSkipVerify: true
-EOF
+    export HTTPS_CERT_FILE HTTPS_KEY_FILE
+    envsubst < /templates/tls.yml >> "$DYNAMIC_CONFIG"
   else
     echo "ERROR: no local cert-files provided. Did you run make-localhost-cert.sh?"
     exit 1
   fi
 fi
 
-# Execute traefik or passed command
 exec "$@"

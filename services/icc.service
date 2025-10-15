@@ -1,0 +1,6 @@
+    icc:
+      loadBalancer:
+        servers:
+          - url: "http://${ICC_HOST}:${ICC_PORT}"
+        # Forward the original Host header to the backend service
+        passHostHeader: true

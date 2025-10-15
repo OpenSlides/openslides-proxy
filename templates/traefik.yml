@@ -1,0 +1,23 @@
+# Traefik configuration for OpenSlides with HTTPS
+api:
+  dashboard: true
+  debug: true
+
+entryPoints:
+  websecure:
+    address: ":8000"
+    http:
+      tls: true
+
+providers:
+  file:
+    directory: ${DYNAMIC_DIR}
+    watch: true
+
+log:
+  level: ${TRAEFIK_LOG_LEVEL}
+
+accessLog: {}
+
+serversTransport:
+  insecureSkipVerify: true

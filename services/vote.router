@@ -1,0 +1,5 @@
+    vote:
+      rule: "PathPrefix(\`/system/vote\`)"
+      service: vote
+      entryPoints:
+        - websecure
