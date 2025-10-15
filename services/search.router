@@ -1,0 +1,5 @@
+    search:
+      rule: "PathPrefix(\`/system/search\`)"
+      service: search
+      entryPoints:
+        - websecure

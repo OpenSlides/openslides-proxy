@@ -1,0 +1,7 @@
+    client:
+      rule: "PathPrefix(\`/\`)"
+      service: client
+      entryPoints:
+        - websecure
+      # Priority ensures this catch-all route is evaluated last
+      priority: 1

@@ -1,0 +1,13 @@
+
+# TLS configuration for local development
+tls:
+  certificates:
+    - certFile: ${HTTPS_CERT_FILE}
+      keyFile: ${HTTPS_KEY_FILE}
+      stores:
+        - default
+  stores:
+    default:
+      defaultCertificate:
+        certFile: ${HTTPS_CERT_FILE}
+        keyFile: ${HTTPS_KEY_FILE}

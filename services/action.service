@@ -1,0 +1,6 @@
+    action:
+      loadBalancer:
+        servers:
+          - url: "http://${ACTION_HOST}:${ACTION_PORT}"
+        # Forward the original Host header to the backend service
+        passHostHeader: true

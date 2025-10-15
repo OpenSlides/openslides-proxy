@@ -1,0 +1,6 @@
+    vote:
+      loadBalancer:
+        servers:
+          - url: "http://${VOTE_HOST}:${VOTE_PORT}"
+        # Forward the original Host header to the backend service
+        passHostHeader: true
