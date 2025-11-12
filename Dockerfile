@@ -35,7 +35,7 @@ HEALTHCHECK --interval=30s --timeout=3s \
 ENTRYPOINT ["/entrypoint"]
 
 # Development Image
-FROM base as dev
+FROM base AS dev
 
 ENV ENABLE_LOCAL_HTTPS=1
 ENV TRAEFIK_LOG_LEVEL=DEBUG
@@ -63,10 +63,10 @@ ENV VOTE_HOST=vote
 ENV VOTE_PORT=9013
 
 # Testing Image
-FROM base as tests
+FROM base AS tests
 
 # Production Image
-FROM base as prod
+FROM base AS prod
 
 # Add appuser for security
 RUN adduser -S -D -H appuser
