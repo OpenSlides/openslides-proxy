@@ -15,6 +15,7 @@ HTTPS_CERT_FILE="${HTTPS_CERT_FILE:-/certs/cert.pem}"
 HTTPS_KEY_FILE="${HTTPS_KEY_FILE:-/certs/key.pem}"
 ENABLE_AUTO_HTTPS="${ENABLE_AUTO_HTTPS:-}"
 EXTERNAL_ADDRESS="${EXTERNAL_ADDRESS:-openslides.example.com}"
+ACME_ENDPOINT="${ACME_ENDPOINT:-}"
 ACME_EMAIL="${ACME_EMAIL:-}"
 
 # Set default values for service endpoints
@@ -111,9 +112,10 @@ if [ -n "$ENABLE_LOCAL_HTTPS" ]; then
 EOF
 elif [ -n "$ENABLE_AUTO_HTTPS" ]; then
   # Also needs tls property, but with additional information for cert retrieval
-  cat >> "$TRAEFIK_CONFIG" << 'EOF'
+  cat >> "$TRAEFIK_CONFIG" << EOF
       tls:
-        domain: ${EXTERNAL_ADDRESS}
+        domains:
+          - main: ${EXTERNAL_ADDRESS}
 EOF
   # Additionally a plain HTTP endpoint to answer ACME challenges on must be
   # configured
@@ -125,7 +127,7 @@ EOF
 EOF
   # Add the certificates resolver providing information for automatic ACME
   # based cert retrieval.
-  cat >> "$TRAEFIK_CONFIG" << 'EOF'
+  cat >> "$TRAEFIK_CONFIG" << EOF
 
 certificatesResolvers:
   acmeResolver:
@@ -135,6 +137,11 @@ certificatesResolvers:
       httpChallenge:
         entryPoint: acme
 EOF
+  if [ -n "$ACME_ENDPOINT" ]; then
+    cat >> "$TRAEFIK_CONFIG" << EOF
+      caServer: ${ACME_ENDPOINT}
+EOF
+  fi
 fi
 
 
