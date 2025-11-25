@@ -1,5 +1,5 @@
     icc:
-      rule: "PathPrefix(\`/system/icc\`)"
+      rule: "PathPrefix(`/system/icc`)"
       service: icc
       entryPoints:
-        - websecure
+        - main

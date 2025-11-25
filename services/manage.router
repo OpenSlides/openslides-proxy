@@ -1,5 +1,5 @@
     manage:
-      rule: "Header(\`Content-Type\`, \`application/grpc\`)"
+      rule: "Header(`Content-Type`, `application/grpc`)"
       service: manage
       entryPoints:
-        - websecure
+        - main

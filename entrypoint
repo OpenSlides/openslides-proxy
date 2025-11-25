@@ -1,53 +1,190 @@
 #!/bin/sh
 # Co-authored-by: Claude <noreply@anthropic.com>
 
-set -e
+set -ae
 
-# Configuration
+# Define variables and set defaults were applicable
+TRAEFIK_CONFIG="${TRAEFIK_CONFIG:-/etc/traefik/traefik.yml}"
+TRAEFIK_LOG_LEVEL="${TRAEFIK_LOG_LEVEL:-INFO}"
+ENABLE_DASHBOARD="${ENABLE_DASHBOARD:-}"
 DYNAMIC_DIR="${DYNAMIC_DIR:-/etc/traefik/dynamic}"
 DYNAMIC_CONFIG="${DYNAMIC_DIR}/dynamic.yml"
 SERVICES_DIR="${SERVICES_DIR:-/services}"
+ENABLE_LOCAL_HTTPS="${ENABLE_LOCAL_HTTPS:-}"
+HTTPS_CERT_FILE="${HTTPS_CERT_FILE:-/certs/cert.pem}"
+HTTPS_KEY_FILE="${HTTPS_KEY_FILE:-/certs/key.pem}"
+ENABLE_AUTO_HTTPS="${ENABLE_AUTO_HTTPS:-}"
+EXTERNAL_ADDRESS="${EXTERNAL_ADDRESS:-openslides.example.com}"
+ACME_EMAIL="${ACME_EMAIL:-}"
 
-# Create dynamic directory
-mkdir -p "$DYNAMIC_DIR"
+# Set default values for service endpoints
+ACTION_HOST="${ACTION_HOST:-backend}"
+ACTION_PORT="${ACTION_PORT:-9002}"
+PRESENTER_HOST="${PRESENTER_HOST:-backend}"
+PRESENTER_PORT="${PRESENTER_PORT:-9003}"
+AUTOUPDATE_HOST="${AUTOUPDATE_HOST:-autoupdate}"
+AUTOUPDATE_PORT="${AUTOUPDATE_PORT:-9012}"
+ICC_HOST="${ICC_HOST:-icc}"
+ICC_PORT="${ICC_PORT:-9007}"
+AUTH_HOST="${AUTH_HOST:-auth}"
+AUTH_PORT="${AUTH_PORT:-9004}"
+SEARCH_HOST="${SEARCH_HOST:-search}"
+SEARCH_PORT="${SEARCH_PORT:-9050}"
+MEDIA_HOST="${MEDIA_HOST:-media}"
+MEDIA_PORT="${MEDIA_PORT:-9006}"
+MANAGE_HOST="${MANAGE_HOST:-manage}"
+MANAGE_PORT="${MANAGE_PORT:-9008}"
+VOTE_HOST="${VOTE_HOST:-vote}"
+VOTE_PORT="${VOTE_PORT:-9013}"
+CLIENT_HOST="${CLIENT_HOST:-client}"
+CLIENT_PORT="${CLIENT_PORT:-9001}"
 
-# Set default values and export for envsubst
-export ACTION_HOST="${ACTION_HOST:-backend}"
-export ACTION_PORT="${ACTION_PORT:-9002}"
-export PRESENTER_HOST="${PRESENTER_HOST:-backend}"
-export PRESENTER_PORT="${PRESENTER_PORT:-9003}"
-export AUTOUPDATE_HOST="${AUTOUPDATE_HOST:-autoupdate}"
-export AUTOUPDATE_PORT="${AUTOUPDATE_PORT:-9012}"
-export ICC_HOST="${ICC_HOST:-icc}"
-export ICC_PORT="${ICC_PORT:-9007}"
-export AUTH_HOST="${AUTH_HOST:-auth}"
-export AUTH_PORT="${AUTH_PORT:-9004}"
-export SEARCH_HOST="${SEARCH_HOST:-search}"
-export SEARCH_PORT="${SEARCH_PORT:-9050}"
-export MEDIA_HOST="${MEDIA_HOST:-media}"
-export MEDIA_PORT="${MEDIA_PORT:-9006}"
-export MANAGE_HOST="${MANAGE_HOST:-manage}"
-export MANAGE_PORT="${MANAGE_PORT:-9008}"
-export VOTE_HOST="${VOTE_HOST:-vote}"
-export VOTE_PORT="${VOTE_PORT:-9013}"
-export CLIENT_HOST="${CLIENT_HOST:-client}"
-export CLIENT_PORT="${CLIENT_PORT:-9001}"
 
-# Start building config
-cat > "$DYNAMIC_CONFIG" << 'EOF'
+# =================================
+# = Build static / install config =
+# =================================
+
+## Start with empty file
+#echo "" > "$TRAEFIK_CONFIG"
+#
+## Add dashboard if enabled
+#if [ -n "$ENABLE_DASHBOARD" ]; then
+#  echo "Enabling dashboard. 'debug: true' for now. NOT FOR PRODUCTION"
+#  cat >> "$TRAEFIK_CONFIG" << 'EOF'
+#api:
+#  dashboard: true
+#  debug: true
+#EOF
+#fi
+#
+## Add provider to read routing config from file
+#cat >> "$TRAEFIK_CONFIG" << 'EOF'
+#
+#providers:
+#  file:
+#    directory: ${DYNAMIC_DIR}
+#    watch: true
+#EOF
+#
+## Enable /ping for HEALTHCHECK on default traefik endpoint (:8080)
+#cat >> "$TRAEFIK_CONFIG" << 'EOF'
+#
+#ping: {}
+#EOF
+#
+## Add logging config
+#cat >> "$TRAEFIK_CONFIG" << 'EOF'
+#
+#log:
+#  level: ${TRAEFIK_LOG_LEVEL}
+#
+#accessLog: {}
+#EOF
+
+# Generate base config from template
+envsubst < /templates/traefik.yml > "$TRAEFIK_CONFIG"
+
+# Add dashboard if enabled
+if [ -n "$ENABLE_DASHBOARD" ]; then
+  echo "Enabling dashboard. 'debug: true' for now. NOT FOR PRODUCTION"
+  cat >> "$TRAEFIK_CONFIG" << 'EOF'
+
+api:
+  dashboard: true
+  debug: true
+EOF
+fi
+
+# Add entrypoint in accordance to HTTPS related variables
+cat >> "$TRAEFIK_CONFIG" << 'EOF'
+entryPoints:
+  main:
+    address: ":8000"
+    http:
+EOF
+
+if [ -n "$ENABLE_LOCAL_HTTPS" ]; then
+  # Define tls property, which will cause all routers to terminate TLS and
+  # foward decrypted traffic.
+  cat >> "$TRAEFIK_CONFIG" << 'EOF'
+      tls: {}
+EOF
+elif [ -n "$ENABLE_AUTO_HTTPS" ]; then
+  # Also needs tls property, but with additional information for cert retrieval
+  cat >> "$TRAEFIK_CONFIG" << 'EOF'
+      tls:
+        domain: ${EXTERNAL_ADDRESS}
+EOF
+  # Additionally a plain HTTP endpoint to answer ACME challenges on must be
+  # configured
+  echo "Configuring traefik to answer acme challenges on port 8001."
+  cat >> "$TRAEFIK_CONFIG" << 'EOF'
+
+  acme:
+    address: ":8001"
+EOF
+  # Add the certificates resolver providing information for automatic ACME
+  # based cert retrieval.
+  cat >> "$TRAEFIK_CONFIG" << 'EOF'
+
+certificatesResolvers:
+  acmeResolver:
+    acme:
+      email: ${ACME_EMAIL}
+      storage: acme.json
+      httpChallenge:
+        entryPoint: acme
+EOF
+fi
+
+
+# ==================================
+# = Build dynamic / routing config =
+# ==================================
+
+# Start with empty file
+echo "" > "$DYNAMIC_CONFIG"
+
+if [ -n "$ENABLE_LOCAL_HTTPS" ]; then
+  if [ -f "$HTTPS_CERT_FILE" ] && [ -f "$HTTPS_KEY_FILE" ]; then
+    envsubst < /templates/tls.yml >> "$DYNAMIC_CONFIG"
+  else
+    echo "ERROR: no local cert-files provided. Did you run make-localhost-cert.sh?"
+    exit 1
+  fi
+fi
+
+# First build SERVICES list (space separated) based on files present in
+# services directory
+SERVICES=
+for service_file in $SERVICES_DIR/*.service; do
+  service=$(basename $service_file .service)
+  service_upper=$(echo "$service" | tr '[:lower:]' '[:upper:]')
+  host_var="${service_upper}_HOST"
+
+  if [[ ! -f "$SERVICES_DIR/$service.service" ]] || [[ ! -f "$SERVICES_DIR/$service.router" ]]; then
+    echo "Skipping, config incomplete: $service"
+    continue
+  fi
+
+  if eval [[ -n "\$${host_var}" ]]; then
+    eval "echo \"Adding config: $service (host: \$${host_var})\"" >&2
+    SERVICES="$SERVICES $service"
+  else
+    echo "Skipping, disabled in environment: $service"
+  fi
+done
+
+# Write to config file
+cat >> "$DYNAMIC_CONFIG" << 'EOF'
+
 http:
   routers:
 EOF
 
 # Concatenate all enabled .router files
-for service in action presenter autoupdate icc auth search media manage vote client; do
-  service_upper=$(echo "$service" | tr '[:lower:]' '[:upper:]')
-  host_var="${service_upper}_HOST"
-
-  if env | grep -q "^${host_var}="; then
-    eval "echo \"Enabling: $service (\$${host_var})\"" >&2
-    envsubst < "$SERVICES_DIR/${service}.router" >> "$DYNAMIC_CONFIG"
-  fi
+for service in $SERVICES; do
+  envsubst < "$SERVICES_DIR/${service}.router" >> "$DYNAMIC_CONFIG"
 done
 
 # Add services section
@@ -57,33 +194,10 @@ cat >> "$DYNAMIC_CONFIG" << 'EOF'
 EOF
 
 # Concatenate all enabled .service files
-for service in action presenter autoupdate icc auth search media manage vote client; do
-  service_upper=$(echo "$service" | tr '[:lower:]' '[:upper:]')
-  host_var="${service_upper}_HOST"
-
-  if env | grep -q "^${host_var}="; then
-    envsubst < "$SERVICES_DIR/${service}.service" >> "$DYNAMIC_CONFIG"
-  fi
+for service in $SERVICES; do
+  envsubst < "$SERVICES_DIR/${service}.service" >> "$DYNAMIC_CONFIG"
 done
 
-# Generate traefik.yml from template
-TRAEFIK_CONFIG="${TRAEFIK_CONFIG:-/etc/traefik/traefik.yml}"
-export DYNAMIC_DIR
-export TRAEFIK_LOG_LEVEL="${TRAEFIK_LOG_LEVEL:-INFO}"
-envsubst < /templates/traefik.yml > "$TRAEFIK_CONFIG"
 
-# Handle HTTPS for local development
-if [ -n "$ENABLE_LOCAL_HTTPS" ]; then
-  HTTPS_CERT_FILE="${HTTPS_CERT_FILE:-/certs/cert.pem}"
-  HTTPS_KEY_FILE="${HTTPS_KEY_FILE:-/certs/key.pem}"
-
-  if [ -f "$HTTPS_CERT_FILE" ] && [ -f "$HTTPS_KEY_FILE" ]; then
-    export HTTPS_CERT_FILE HTTPS_KEY_FILE
-    envsubst < /templates/tls.yml >> "$DYNAMIC_CONFIG"
-  else
-    echo "ERROR: no local cert-files provided. Did you run make-localhost-cert.sh?"
-    exit 1
-  fi
-fi
-
+# Finally start CMD
 exec "$@"

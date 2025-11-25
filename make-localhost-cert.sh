@@ -27,7 +27,10 @@ if type mkcert >/dev/null 2>&1; then
         "localhost.localdomain" \
         "*.localhost.localdomain"
 
-    echo "Certificates created with mkcert (automatically trusted in browsers)"
+    echo "Certificates created with mkcert."
+    echo "If the certs were generated on a different machine than the one running the"
+    echo "browser to access the endpoint, you will first have to copy mkcerts local"
+    echo "rootCA there and add it to the trust store."
 
 elif type openssl >/dev/null 2>&1; then
     echo "mkcert not found, falling back to openssl..."
@@ -45,8 +48,8 @@ else
     echo >&2 "Please install either mkcert (recommended) or openssl."
     echo >&2 ""
     echo >&2 "To install mkcert:"
-    echo >&2 "  - macOS: brew install mkcert"
     echo >&2 "  - Linux: Check https://github.com/FiloSottile/mkcert#installation"
+    echo >&2 "  - macOS: brew install mkcert"
     echo >&2 "  - Windows: choco install mkcert or scoop install mkcert"
     exit 1
 fi

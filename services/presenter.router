@@ -1,5 +1,5 @@
     presenter:
-      rule: "PathPrefix(\`/system/presenter\`)"
+      rule: "PathPrefix(`/system/presenter`)"
       service: presenter
       entryPoints:
-        - websecure
+        - main

@@ -1,0 +1,4 @@
+
+entryPoints:
+  amce:
+    address: ":8001"
