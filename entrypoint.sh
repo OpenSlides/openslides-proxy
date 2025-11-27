@@ -3,7 +3,7 @@
 
 set -ae
 
-# Define variables and set defaults were applicable
+# Define variables and set defaults where applicable
 TRAEFIK_CONFIG="${TRAEFIK_CONFIG:-/etc/traefik/traefik.yml}"
 TRAEFIK_LOG_LEVEL="${TRAEFIK_LOG_LEVEL:-INFO}"
 ENABLE_DASHBOARD="${ENABLE_DASHBOARD:-}"
@@ -45,43 +45,6 @@ CLIENT_PORT="${CLIENT_PORT:-9001}"
 # = Build static / install config =
 # =================================
 
-## Start with empty file
-#echo "" > "$TRAEFIK_CONFIG"
-#
-## Add dashboard if enabled
-#if [ -n "$ENABLE_DASHBOARD" ]; then
-#  echo "Enabling dashboard. 'debug: true' for now. NOT FOR PRODUCTION"
-#  cat >> "$TRAEFIK_CONFIG" << 'EOF'
-#api:
-#  dashboard: true
-#  debug: true
-#EOF
-#fi
-#
-## Add provider to read routing config from file
-#cat >> "$TRAEFIK_CONFIG" << 'EOF'
-#
-#providers:
-#  file:
-#    directory: ${DYNAMIC_DIR}
-#    watch: true
-#EOF
-#
-## Enable /ping for HEALTHCHECK on default traefik endpoint (:8080)
-#cat >> "$TRAEFIK_CONFIG" << 'EOF'
-#
-#ping: {}
-#EOF
-#
-## Add logging config
-#cat >> "$TRAEFIK_CONFIG" << 'EOF'
-#
-#log:
-#  level: ${TRAEFIK_LOG_LEVEL}
-#
-#accessLog: {}
-#EOF
-
 # Generate base config from template
 envsubst < /templates/traefik.yml > "$TRAEFIK_CONFIG"
 
@@ -96,7 +59,7 @@ api:
 EOF
 fi
 
-# Add entrypoint in accordance to HTTPS related variables
+# Add entryPoints in accordance to HTTPS related variables
 cat >> "$TRAEFIK_CONFIG" << 'EOF'
 entryPoints:
   main:

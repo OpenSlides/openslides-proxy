@@ -15,6 +15,6 @@ log:
 
 accessLog: {}
 
-# entryPoints are generated dynamically in entrypoint script as their
+# entryPoints are generated dynamically in entrypoint.sh script as their
 # definitions depend on TLS configuration
 

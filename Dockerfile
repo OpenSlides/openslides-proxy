@@ -11,15 +11,14 @@ ENV APP_CONTEXT=${CONTEXT}
 RUN apk add --no-cache curl gettext
 
 # Copy configuration files
-#COPY traefik.yml /etc/traefik/traefik.yml
-COPY entrypoint /entrypoint
+COPY entrypoint.sh /entrypoint.sh
 COPY certs /certs
 COPY services /services
 COPY templates /templates
 
 # Create dynamic config directory and make entrypoint executable
 RUN mkdir -p /etc/traefik/dynamic
-RUN chmod +x /entrypoint
+RUN chmod +x /entrypoint.sh
 
 # External Information
 LABEL org.opencontainers.image.title="OpenSlides Traefik Proxy"
@@ -32,10 +31,11 @@ HEALTHCHECK --interval=30s --timeout=3s \
   CMD curl -f http://localhost:8080/ping
 
 # Command
-ENTRYPOINT ["/entrypoint"]
+ENTRYPOINT ["/entrypoint.sh"]
 COPY ./dev/command.sh ./
 RUN chmod +x command.sh
 CMD ["./command.sh"]
+
 
 # Development Image
 FROM base AS dev
@@ -48,6 +48,7 @@ ENV TRAEFIK_LOG_LEVEL=DEBUG
 # Testing Image
 FROM base AS tests
 
+
 # Production Image
 FROM base AS prod
 
@@ -55,6 +56,6 @@ FROM base AS prod
 RUN adduser -S -D -H appuser
 RUN chown -R appuser /app/ && \
     chown -R appuser /etc/traefik/ && \
-    chown appuser /entrypoint
+    chown appuser /entrypoint.sh
 
 USER appuser
