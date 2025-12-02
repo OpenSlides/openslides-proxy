@@ -1,4 +1,0 @@
-
-entryPoints:
-  web:
-    address: ":8000"
