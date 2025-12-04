@@ -1,5 +1,5 @@
     action:
-      rule: "PathPrefix(\`/system/action\`)"
+      rule: "PathPrefix(`/system/action`)"
       service: action
       entryPoints:
-        - websecure
+        - main

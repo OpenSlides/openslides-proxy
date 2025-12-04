@@ -1,5 +1,5 @@
     search:
-      rule: "PathPrefix(\`/system/search\`)"
+      rule: "PathPrefix(`/system/search`)"
       service: search
       entryPoints:
-        - websecure
+        - main

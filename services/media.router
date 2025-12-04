@@ -1,5 +1,5 @@
     media:
-      rule: "PathPrefix(\`/system/media\`)"
+      rule: "PathPrefix(`/system/media`)"
       service: media
       entryPoints:
-        - websecure
+        - main

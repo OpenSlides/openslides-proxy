@@ -1,5 +1,5 @@
     autoupdate:
-      rule: "PathPrefix(\`/system/autoupdate\`)"
+      rule: "PathPrefix(`/system/autoupdate`)"
       service: autoupdate
       entryPoints:
-        - websecure
+        - main
