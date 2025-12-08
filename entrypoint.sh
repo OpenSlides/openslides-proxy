@@ -79,10 +79,10 @@ elif [ -n "$ENABLE_AUTO_HTTPS" ]; then
       tls:
         domains:
           - main: ${EXTERNAL_ADDRESS}
+        certResolver: acmeResolver
 EOF
   # Additionally a plain HTTP endpoint to answer ACME challenges on must be
   # configured
-  echo "Configuring traefik to answer acme challenges on port 8001."
   cat >> "$TRAEFIK_CONFIG" << 'EOF'
 
   acme:
@@ -105,6 +105,10 @@ EOF
       caServer: ${ACME_ENDPOINT}
 EOF
   fi
+
+  echo "traefik was configured to automatically retrieve a TLS certificates via acme."
+  echo "Make sure incoming challange requests (to HOST:80/.well-known/acme-challenge/) reach this container on port 8001"
+  echo "In most cases forwarding the hosts port 80 to containers port 8001 is enough."
 fi
 
 
