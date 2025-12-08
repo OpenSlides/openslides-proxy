@@ -1,0 +1,5 @@
+    autoupdate:
+      rule: "PathPrefix(`/system/autoupdate`)"
+      service: autoupdate
+      entryPoints:
+        - main

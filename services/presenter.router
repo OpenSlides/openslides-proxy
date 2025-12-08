@@ -1,0 +1,5 @@
+    presenter:
+      rule: "PathPrefix(`/system/presenter`)"
+      service: presenter
+      entryPoints:
+        - main

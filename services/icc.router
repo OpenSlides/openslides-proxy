@@ -1,0 +1,5 @@
+    icc:
+      rule: "PathPrefix(`/system/icc`)"
+      service: icc
+      entryPoints:
+        - main
