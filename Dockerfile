@@ -1,6 +1,6 @@
 ARG CONTEXT=prod
 
-FROM traefik:3.6.0 as base
+FROM traefik:3.6.0 AS base
 
 ## Setup
 ARG CONTEXT

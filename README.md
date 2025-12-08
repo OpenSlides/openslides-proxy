@@ -28,7 +28,7 @@ The proxy service is configured through:
 - `TRAEFIK_LOG_LEVEL` - Log level (default: INFO, DEBUG in dev image)
 - `ENABLE_DASHBOARD` - Enable traefik web-based dashboard, also sets `debug: true` for now
 - `ENABLE_LOCAL_HTTPS` - Enable TLS using certs provided through `HTTPS_*_FILE`. Can be self-signed (used in dev by default) or manually generated/trusted.
-- `ENABLE_AUTO_HTTPS` - Enable cert retrieval through ACME. Depends on further variables.
+- `ENABLE_AUTO_HTTPS` - Enable cert retrieval through ACME. Depends on further variables. (Overruled by `ENABLE_LOCAL_HTTPS` if both are set)
   - `EXTERNAL_ADDRESS` - domain for which to retrieve cert
   - `ACME_ENDPOINT` - when unset will fallback to traefiks default value for `acme.caServer: https://acme-v02.api.letsencrypt.org/directory`
   - `ACME_EMAIL` - Email Address sent to acme endpoint during cert retrieval
