@@ -1,51 +1,61 @@
 ARG CONTEXT=prod
 
-FROM caddy:2.3.0-alpine AS base
+FROM traefik:3.6.0 AS base
 
 ## Setup
 ARG CONTEXT
 WORKDIR /app
 ENV APP_CONTEXT=${CONTEXT}
 
-## Installs
-RUN apk update && apk add --no-cache \
-    jq \
-    gettext
+# curl for healthcheck, gettext for templating (envsubst)
+RUN apk add --no-cache curl gettext
 
-COPY caddy_base.json /caddy_base.json
-COPY entrypoint /entrypoint
+# Copy configuration files
+COPY entrypoint.sh /entrypoint.sh
 COPY certs /certs
+COPY services /services
+COPY templates /templates
 
-## External Information
-LABEL org.opencontainers.image.title="OpenSlides Proxy"
-LABEL org.opencontainers.image.description="The proxy is the entrypoint for traffic going into an OpenSlides instance."
+# Create dynamic config directory and make entrypoint executable
+RUN mkdir -p /etc/traefik/dynamic
+RUN chmod +x /entrypoint.sh
+
+# External Information
+LABEL org.opencontainers.image.title="OpenSlides Traefik Proxy"
+LABEL org.opencontainers.image.description="The Traefik proxy is the entrypoint for traffic going into an OpenSlides instance."
 LABEL org.opencontainers.image.licenses="MIT"
-LABEL org.opencontainers.image.source="https://github.com/OpenSlides/OpenSlides/tree/main/proxy"
+LABEL org.opencontainers.image.source="https://github.com/OpenSlides/OpenSlides/tree/main/openslides-proxy"
 
-## Command
-ENTRYPOINT ["/entrypoint"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD curl -f http://localhost:8080/ping
+
+# Command
+ENTRYPOINT ["/entrypoint.sh"]
 COPY ./dev/command.sh ./
 RUN chmod +x command.sh
 CMD ["./command.sh"]
 
-# Development Image
 
+# Development Image
 FROM base AS dev
 
 ENV ENABLE_LOCAL_HTTPS=1
+ENV ENABLE_DASHBOARD=1
+ENV TRAEFIK_LOG_LEVEL=DEBUG
+
 
 # Testing Image
-
 FROM base AS tests
 
-# Production Image
 
+# Production Image
 FROM base AS prod
 
-# Add appuser
-RUN adduser --system --no-create-home appuser && \
-    chown appuser /app/ && \
-    chown appuser /etc/caddy/ && \
-    chown appuser /config/caddy/
+# Add appuser for security
+RUN adduser -S -D -H appuser
+RUN chown -R appuser /app/ && \
+    chown -R appuser /etc/traefik/ && \
+    chown appuser /entrypoint.sh
 
 USER appuser
