@@ -1,0 +1,20 @@
+# Traefik configuration for OpenSlides
+
+# Add provider to read routing config from file
+providers:
+  file:
+    directory: ${DYNAMIC_DIR}
+    watch: true
+
+# Enable /ping for HEALTHCHECK on default traefik endpoint (:8080)
+ping: {}
+
+# Add logging config
+log:
+  level: ${TRAEFIK_LOG_LEVEL}
+
+accessLog: {}
+
+# entryPoints are generated dynamically in entrypoint.sh script as their
+# definitions depend on TLS configuration
+

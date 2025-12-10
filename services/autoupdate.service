@@ -1,0 +1,6 @@
+    autoupdate:
+      loadBalancer:
+        servers:
+          - url: "http://${AUTOUPDATE_HOST}:${AUTOUPDATE_PORT}"
+        # Forward the original Host header to the backend service
+        passHostHeader: true
