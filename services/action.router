@@ -1,0 +1,5 @@
+    action:
+      rule: "PathPrefix(`/system/action`)"
+      service: action
+      entryPoints:
+        - main

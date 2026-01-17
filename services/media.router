@@ -1,0 +1,5 @@
+    media:
+      rule: "PathPrefix(`/system/media`)"
+      service: media
+      entryPoints:
+        - main
