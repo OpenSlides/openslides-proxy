@@ -18,6 +18,13 @@ EXTERNAL_ADDRESS="${EXTERNAL_ADDRESS:-openslides.example.com}"
 ACME_ENDPOINT="${ACME_ENDPOINT:-}"
 ACME_EMAIL="${ACME_EMAIL:-}"
 
+# OIDC configuration
+OIDC_ENABLED="${OIDC_ENABLED:-}"
+OIDC_SESSION_SECRET="${OIDC_SESSION_SECRET:-}"
+OIDC_PROVIDER_URL="${OIDC_PROVIDER_URL:-}"
+OIDC_CLIENT_ID="${OIDC_CLIENT_ID:-}"
+OIDC_CLIENT_SECRET="${OIDC_CLIENT_SECRET:-}"
+
 # Set default values for service endpoints
 ACTION_HOST="${ACTION_HOST:-backend}"
 ACTION_PORT="${ACTION_PORT:-9002}"
@@ -161,6 +168,11 @@ EOF
 # Concatenate all enabled .router files
 for service in $SERVICES; do
   envsubst < "$SERVICES_DIR/${service}.router" >> "$DYNAMIC_CONFIG"
+  # Add OIDC middleware to routes if enabled (except for auth service)
+  if [ -n "$OIDC_ENABLED" ] && [ "$service" != "auth" ]; then
+    echo "      middlewares:" >> "$DYNAMIC_CONFIG"
+    echo "        - oidc-auth" >> "$DYNAMIC_CONFIG"
+  fi
 done
 
 # Add services section
@@ -173,6 +185,35 @@ EOF
 for service in $SERVICES; do
   envsubst < "$SERVICES_DIR/${service}.service" >> "$DYNAMIC_CONFIG"
 done
+
+# Add OIDC middleware configuration if enabled
+if [ -n "$OIDC_ENABLED" ]; then
+  echo "Enabling OIDC authentication middleware"
+  cat >> "$DYNAMIC_CONFIG" << EOF
+
+  middlewares:
+    oidc-auth:
+      plugin:
+        traefik-oidc-auth:
+          Secret: "${OIDC_SESSION_SECRET}"
+          Provider:
+            Url: "${OIDC_PROVIDER_URL}"
+            ClientId: "${OIDC_CLIENT_ID}"
+            ClientSecret: "${OIDC_CLIENT_SECRET}"
+            UsePkce: true
+          Scopes:
+            - openid
+            - profile
+            - email
+            - roles
+          CallbackUri: /oauth2/callback
+          LogoutUri: /oauth2/logout
+          Headers:
+            Authorization: "Bearer {{ .AccessToken }}"
+            X-Forwarded-User: "{{ .Claims.preferred_username }}"
+            X-Auth-Request-Email: "{{ .Claims.email }}"
+EOF
+fi
 
 
 # Finally start CMD

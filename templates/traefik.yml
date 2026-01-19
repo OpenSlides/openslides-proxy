@@ -1,5 +1,11 @@
 # Traefik configuration for OpenSlides
 
+# Experimental plugins configuration
+# The traefik-oidc-auth plugin is loaded via command-line arguments
+# when using docker-compose.oidc.yml overlay:
+#   --experimental.plugins.traefik-oidc-auth.modulename=github.com/sevensolutions/traefik-oidc-auth
+#   --experimental.plugins.traefik-oidc-auth.version=v0.19.3
+
 # Add provider to read routing config from file
 providers:
   file:
