@@ -28,7 +28,7 @@ LABEL org.opencontainers.image.source="https://github.com/OpenSlides/OpenSlides/
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s \
-  CMD curl -f http://localhost:8080/ping
+    CMD curl -f http://localhost:8080/ping
 
 # Command
 ENTRYPOINT ["/entrypoint.sh"]
@@ -42,7 +42,7 @@ FROM base AS dev
 
 ENV ENABLE_LOCAL_HTTPS=1
 ENV ENABLE_DASHBOARD=1
-ENV TRAEFIK_LOG_LEVEL=DEBUG
+ENV TRAEFIK_LOG_LEVEL=ERROR
 
 
 # Testing Image
