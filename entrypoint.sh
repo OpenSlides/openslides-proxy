@@ -57,6 +57,19 @@ CLIENT_PORT="${CLIENT_PORT:-9001}"
 # Generate base config from template
 envsubst < /templates/traefik.yml > "$TRAEFIK_CONFIG"
 
+# Add experimental plugins section if OIDC is enabled
+if [ -n "$OIDC_ENABLED" ]; then
+  echo "Configuring OIDC plugin in static configuration"
+  cat >> "$TRAEFIK_CONFIG" << 'EOF'
+
+experimental:
+  plugins:
+    traefik-oidc-auth:
+      moduleName: github.com/sevensolutions/traefik-oidc-auth
+      version: v0.17.0
+EOF
+fi
+
 # Add dashboard if enabled
 if [ -n "$ENABLE_DASHBOARD" ]; then
   echo "Enabling dashboard. 'debug: true' for now. NOT FOR PRODUCTION"
@@ -206,12 +219,13 @@ if [ -n "$OIDC_ENABLED" ]; then
             - profile
             - email
             - roles
+          LoginUri: /oauth2/login
           CallbackUri: /oauth2/callback
           LogoutUri: /oauth2/logout
           Headers:
-            Authorization: "Bearer {{ .AccessToken }}"
-            X-Forwarded-User: "{{ .Claims.preferred_username }}"
-            X-Auth-Request-Email: "{{ .Claims.email }}"
+            Authorization: 'Bearer {{ "{{" }} .AccessToken {{ "}}" }}'
+            X-Forwarded-User: '{{ "{{" }} .Claims.preferred_username {{ "}}" }}'
+            X-Auth-Request-Email: '{{ "{{" }} .Claims.email {{ "}}" }}'
 EOF
 fi
 
