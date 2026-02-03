@@ -164,6 +164,11 @@ for service_file in $SERVICES_DIR/*.service; do
   fi
 
   if eval [[ -n "\$${host_var}" ]]; then
+    # Skip auth service in OIDC mode - authentication handled by Keycloak
+    if [ -n "$OIDC_ENABLED" ] && [ "$service" = "auth" ]; then
+      echo "Skipping auth service in OIDC mode (auth handled by Keycloak)"
+      continue
+    fi
     eval "echo \"Adding config: $service (host: \$${host_var})\"" >&2
     SERVICES="$SERVICES $service"
   else
@@ -181,12 +186,33 @@ EOF
 # Concatenate all enabled .router files
 for service in $SERVICES; do
   envsubst < "$SERVICES_DIR/${service}.router" >> "$DYNAMIC_CONFIG"
-  # Add OIDC middleware to routes if enabled (except for auth service)
-  if [ -n "$OIDC_ENABLED" ] && [ "$service" != "auth" ]; then
+  # Add OIDC middleware only to client route (for login redirect)
+  # Backend services use OpenSlides JWT from cookie, not OIDC middleware
+  if [ -n "$OIDC_ENABLED" ] && [ "$service" = "client" ]; then
     echo "      middlewares:" >> "$DYNAMIC_CONFIG"
     echo "        - oidc-auth" >> "$DYNAMIC_CONFIG"
   fi
 done
+
+# In OIDC mode, add provisioning and who-am-i routes to backend
+if [ -n "$OIDC_ENABLED" ]; then
+  echo "Adding OIDC auth routers (routes to backend)"
+  cat >> "$DYNAMIC_CONFIG" << EOF
+    auth-oidc-provision:
+      rule: "PathPrefix(\`/system/auth/oidc-provision\`)"
+      service: action
+      entryPoints:
+        - main
+      middlewares:
+        - oidc-auth
+      priority: 15
+    auth-who-am-i:
+      rule: "PathPrefix(\`/system/auth/who-am-i\`)"
+      service: action
+      entryPoints:
+        - main
+EOF
+fi
 
 # Add services section
 cat >> "$DYNAMIC_CONFIG" << 'EOF'
@@ -208,6 +234,7 @@ if [ -n "$OIDC_ENABLED" ]; then
     oidc-auth:
       plugin:
         traefik-oidc-auth:
+          LogLevel: debug
           Secret: "${OIDC_SESSION_SECRET}"
           Provider:
             Url: "${OIDC_PROVIDER_URL}"
@@ -222,10 +249,14 @@ if [ -n "$OIDC_ENABLED" ]; then
           LoginUri: /oauth2/login
           CallbackUri: /oauth2/callback
           LogoutUri: /oauth2/logout
+          PostLoginRedirectUri: /system/auth/oidc-provision
           Headers:
-            Authorization: 'Bearer {{ "{{" }} .AccessToken {{ "}}" }}'
-            X-Forwarded-User: '{{ "{{" }} .Claims.preferred_username {{ "}}" }}'
-            X-Auth-Request-Email: '{{ "{{" }} .Claims.email {{ "}}" }}'
+            - Name: Authorization
+              Value: 'Bearer {{ "{{ .accessToken }}" }}'
+            - Name: X-Forwarded-User
+              Value: '{{ "{{ .claims.preferred_username }}" }}'
+            - Name: X-Auth-Request-Email
+              Value: '{{ "{{ .claims.email }}" }}'
 EOF
 fi
 

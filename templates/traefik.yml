@@ -19,7 +19,15 @@ ping: {}
 log:
   level: ${TRAEFIK_LOG_LEVEL}
 
-accessLog: {}
+accessLog:
+  fields:
+    headers:
+      defaultMode: keep
+      names:
+        Authorization: keep
+        X-Forwarded-User: keep
+        X-Auth-Request-Email: keep
+        authentication: keep
 
 # entryPoints are generated dynamically in entrypoint.sh script as their
 # definitions depend on TLS configuration
