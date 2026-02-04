@@ -186,11 +186,15 @@ EOF
 # Concatenate all enabled .router files
 for service in $SERVICES; do
   envsubst < "$SERVICES_DIR/${service}.router" >> "$DYNAMIC_CONFIG"
-  # Add OIDC middleware only to client route (for login redirect)
-  # Backend services use OpenSlides JWT from cookie, not OIDC middleware
-  if [ -n "$OIDC_ENABLED" ] && [ "$service" = "client" ]; then
-    echo "      middlewares:" >> "$DYNAMIC_CONFIG"
-    echo "        - oidc-auth" >> "$DYNAMIC_CONFIG"
+  # Add OIDC middleware to routes that need authentication
+  # In OIDC mode, Traefik injects the Authorization header with access token
+  if [ -n "$OIDC_ENABLED" ]; then
+    case "$service" in
+      client|autoupdate|action|presenter|icc|vote|search|media|projector)
+        echo "      middlewares:" >> "$DYNAMIC_CONFIG"
+        echo "        - oidc-auth" >> "$DYNAMIC_CONFIG"
+        ;;
+    esac
   fi
 done
 
@@ -198,6 +202,12 @@ done
 if [ -n "$OIDC_ENABLED" ]; then
   echo "Adding OIDC auth routers (routes to backend)"
   cat >> "$DYNAMIC_CONFIG" << EOF
+    keycloak:
+      rule: "PathPrefix(\`/auth\`)"
+      service: keycloak
+      entryPoints:
+        - main
+      priority: 10
     auth-oidc-provision:
       rule: "PathPrefix(\`/system/auth/oidc-provision\`)"
       service: action
@@ -211,6 +221,9 @@ if [ -n "$OIDC_ENABLED" ]; then
       service: action
       entryPoints:
         - main
+      middlewares:
+        - oidc-auth
+      priority: 15
 EOF
 fi
 
@@ -224,6 +237,17 @@ EOF
 for service in $SERVICES; do
   envsubst < "$SERVICES_DIR/${service}.service" >> "$DYNAMIC_CONFIG"
 done
+
+# Add Keycloak service if OIDC is enabled
+if [ -n "$OIDC_ENABLED" ]; then
+  cat >> "$DYNAMIC_CONFIG" << EOF
+    keycloak:
+      loadBalancer:
+        servers:
+          - url: "http://keycloak:8080"
+        passHostHeader: true
+EOF
+fi
 
 # Add OIDC middleware configuration if enabled
 if [ -n "$OIDC_ENABLED" ]; then
@@ -250,9 +274,12 @@ if [ -n "$OIDC_ENABLED" ]; then
           CallbackUri: /oauth2/callback
           LogoutUri: /oauth2/logout
           PostLoginRedirectUri: /system/auth/oidc-provision
+          UnauthorizedBehavior: Auto
+          SessionCookie:
+            SameSite: lax
           Headers:
-            - Name: Authorization
-              Value: 'Bearer {{ "{{ .accessToken }}" }}'
+            - Name: Authentication
+              Value: 'bearer {{ "{{ .accessToken }}" }}'
             - Name: X-Forwarded-User
               Value: '{{ "{{ .claims.preferred_username }}" }}'
             - Name: X-Auth-Request-Email
