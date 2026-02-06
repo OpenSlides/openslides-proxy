@@ -1,6 +1,0 @@
-    oidc:
-      rule: "PathPrefix(`/oauth2`)"
-      service: client
-      entryPoints:
-        - main
-      priority: 10

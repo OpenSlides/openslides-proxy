@@ -224,6 +224,20 @@ if [ -n "$OIDC_ENABLED" ]; then
       middlewares:
         - oidc-auth
       priority: 15
+    autoupdate-theme:
+      rule: "Path(\`/system/autoupdate/theme\`)"
+      service: autoupdate
+      entryPoints:
+        - main
+      priority: 15
+    oauth2:
+      rule: "PathPrefix(\`/oauth2\`)"
+      service: client
+      entryPoints:
+        - main
+      middlewares:
+        - oidc-auth
+      priority: 10
 EOF
 fi
 
