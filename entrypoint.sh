@@ -289,8 +289,10 @@ if [ -n "$OIDC_ENABLED" ]; then
           LogoutUri: /oauth2/logout
           PostLoginRedirectUri: /system/auth/oidc-provision
           UnauthorizedBehavior: Auto
+          PostLogoutRedirectUri: /
           SessionCookie:
             SameSite: lax
+            HttpOnly: false
           Headers:
             - Name: Authentication
               Value: 'bearer {{ "{{ .accessToken }}" }}'
