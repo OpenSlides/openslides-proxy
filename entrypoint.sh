@@ -229,7 +229,7 @@ if [ -n "$OIDC_ENABLED" ]; then
       service: autoupdate
       entryPoints:
         - main
-      priority: 15
+      priority: 50
     oauth2:
       rule: "PathPrefix(\`/oauth2\`)"
       service: client
