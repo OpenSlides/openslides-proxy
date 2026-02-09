@@ -1,0 +1,6 @@
+    projector:
+      loadBalancer:
+        servers:
+          - url: "http://${PROJECTOR_HOST}:${PROJECTOR_PORT}"
+        # Forward the original Host header to the backend service
+        passHostHeader: true
