@@ -224,9 +224,9 @@ if [ -n "$OIDC_ENABLED" ]; then
       middlewares:
         - oidc-auth
       priority: 15
-    autoupdate-theme:
-      rule: "Path(\`/system/autoupdate/theme\`)"
-      service: autoupdate
+    presenter-theme:
+      rule: "Path(\`/system/presenter/theme\`)"
+      service: presenter
       entryPoints:
         - main
       priority: 50
