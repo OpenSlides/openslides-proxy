@@ -18,6 +18,13 @@ EXTERNAL_ADDRESS="${EXTERNAL_ADDRESS:-openslides.example.com}"
 ACME_ENDPOINT="${ACME_ENDPOINT:-}"
 ACME_EMAIL="${ACME_EMAIL:-}"
 
+# OIDC configuration
+OIDC_ENABLED="${OIDC_ENABLED:-}"
+OIDC_SESSION_SECRET="${OIDC_SESSION_SECRET:-}"
+OIDC_PROVIDER_URL="${OIDC_PROVIDER_URL:-}"
+OIDC_CLIENT_ID="${OIDC_CLIENT_ID:-}"
+OIDC_CLIENT_SECRET="${OIDC_CLIENT_SECRET:-}"
+
 # Set default values for service endpoints
 ACTION_HOST="${ACTION_HOST:-backend}"
 ACTION_PORT="${ACTION_PORT:-9002}"
@@ -49,6 +56,19 @@ CLIENT_PORT="${CLIENT_PORT:-9001}"
 
 # Generate base config from template
 envsubst < /templates/traefik.yml > "$TRAEFIK_CONFIG"
+
+# Add experimental plugins section if OIDC is enabled
+if [ -n "$OIDC_ENABLED" ]; then
+  echo "Configuring OIDC plugin in static configuration"
+  cat >> "$TRAEFIK_CONFIG" << 'EOF'
+
+experimental:
+  plugins:
+    traefik-oidc-auth:
+      moduleName: github.com/sevensolutions/traefik-oidc-auth
+      version: v0.18.0
+EOF
+fi
 
 # Add dashboard if enabled
 if [ -n "$ENABLE_DASHBOARD" ]; then
@@ -144,6 +164,11 @@ for service_file in $SERVICES_DIR/*.service; do
   fi
 
   if eval [[ -n "\$${host_var}" ]]; then
+    # Skip auth service in OIDC mode - authentication handled by Keycloak
+    if [ -n "$OIDC_ENABLED" ] && [ "$service" = "auth" ]; then
+      echo "Skipping auth service in OIDC mode (auth handled by Keycloak)"
+      continue
+    fi
     eval "echo \"Adding config: $service (host: \$${host_var})\"" >&2
     SERVICES="$SERVICES $service"
   else
@@ -161,7 +186,60 @@ EOF
 # Concatenate all enabled .router files
 for service in $SERVICES; do
   envsubst < "$SERVICES_DIR/${service}.router" >> "$DYNAMIC_CONFIG"
+  # Add OIDC middleware to routes that need authentication
+  # In OIDC mode, Traefik injects the Authorization header with access token
+  if [ -n "$OIDC_ENABLED" ]; then
+    case "$service" in
+      client|autoupdate|action|presenter|icc|vote|search|media|projector)
+        echo "      middlewares:" >> "$DYNAMIC_CONFIG"
+        echo "        - oidc-auth" >> "$DYNAMIC_CONFIG"
+        ;;
+    esac
+  fi
 done
+
+# In OIDC mode, add provisioning and who-am-i routes to backend
+if [ -n "$OIDC_ENABLED" ]; then
+  echo "Adding OIDC auth routers (routes to backend)"
+  cat >> "$DYNAMIC_CONFIG" << EOF
+    keycloak:
+      rule: "PathPrefix(\`/auth\`)"
+      service: keycloak
+      entryPoints:
+        - main
+      priority: 10
+    auth-oidc-provision:
+      rule: "PathPrefix(\`/system/auth/oidc-provision\`)"
+      service: action
+      entryPoints:
+        - main
+      middlewares:
+        - oidc-auth
+      priority: 15
+    auth-who-am-i:
+      rule: "PathPrefix(\`/system/auth/who-am-i\`)"
+      service: action
+      entryPoints:
+        - main
+      middlewares:
+        - oidc-auth
+      priority: 15
+    presenter-theme:
+      rule: "Path(\`/system/presenter/theme\`)"
+      service: presenter
+      entryPoints:
+        - main
+      priority: 50
+    oauth2:
+      rule: "PathPrefix(\`/oauth2\`)"
+      service: client
+      entryPoints:
+        - main
+      middlewares:
+        - oidc-auth
+      priority: 10
+EOF
+fi
 
 # Add services section
 cat >> "$DYNAMIC_CONFIG" << 'EOF'
@@ -173,6 +251,57 @@ EOF
 for service in $SERVICES; do
   envsubst < "$SERVICES_DIR/${service}.service" >> "$DYNAMIC_CONFIG"
 done
+
+# Add Keycloak service if OIDC is enabled
+if [ -n "$OIDC_ENABLED" ]; then
+  cat >> "$DYNAMIC_CONFIG" << EOF
+    keycloak:
+      loadBalancer:
+        servers:
+          - url: "http://keycloak:8080"
+        passHostHeader: true
+EOF
+fi
+
+# Add OIDC middleware configuration if enabled
+if [ -n "$OIDC_ENABLED" ]; then
+  echo "Enabling OIDC authentication middleware"
+  cat >> "$DYNAMIC_CONFIG" << EOF
+
+  middlewares:
+    oidc-auth:
+      plugin:
+        traefik-oidc-auth:
+          LogLevel: debug
+          Secret: "${OIDC_SESSION_SECRET}"
+          Provider:
+            Url: "${OIDC_PROVIDER_URL}"
+            ClientId: "${OIDC_CLIENT_ID}"
+            ClientSecret: "${OIDC_CLIENT_SECRET}"
+            UsePkce: true
+          Scopes:
+            - openid
+            - profile
+            - email
+            - roles
+          LoginUri: /oauth2/login
+          CallbackUri: /oauth2/callback
+          LogoutUri: /oauth2/logout
+          PostLoginRedirectUri: /system/auth/oidc-provision
+          UnauthorizedBehavior: Auto
+          PostLogoutRedirectUri: /
+          SessionCookie:
+            SameSite: lax
+            HttpOnly: false
+          Headers:
+            - Name: Authentication
+              Value: 'bearer {{ "{{ .accessToken }}" }}'
+            - Name: X-Forwarded-User
+              Value: '{{ "{{ .claims.preferred_username }}" }}'
+            - Name: X-Auth-Request-Email
+              Value: '{{ "{{ .claims.email }}" }}'
+EOF
+fi
 
 
 # Finally start CMD
