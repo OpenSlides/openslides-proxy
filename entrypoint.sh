@@ -66,7 +66,7 @@ experimental:
   plugins:
     traefik-oidc-auth:
       moduleName: github.com/sevensolutions/traefik-oidc-auth
-      version: v0.19.3
+      version: v0.18.0
 EOF
 fi
 
