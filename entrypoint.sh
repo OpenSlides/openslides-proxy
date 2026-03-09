@@ -159,7 +159,7 @@ for service_file in $SERVICES_DIR/*.service; do
   service_upper=$(echo "$service" | tr '[:lower:]' '[:upper:]')
   host_var="${service_upper}_HOST"
 
-  if [[ ! -f "$SERVICES_DIR/$service.service" ]] || [[ ! -f "$SERVICES_DIR/$service.router" ]]; then
+  if [ ! -f "$SERVICES_DIR/$service.service" ] || [ ! -f "$SERVICES_DIR/$service.router" ]; then
     echo "Skipping, config incomplete: $service"
     continue
   fi
