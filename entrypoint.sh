@@ -22,6 +22,7 @@ ACME_EMAIL="${ACME_EMAIL:-}"
 OIDC_ENABLED="${OIDC_ENABLED:-}"
 OIDC_SESSION_SECRET="${OIDC_SESSION_SECRET:-}"
 OIDC_PROVIDER_URL="${OIDC_PROVIDER_URL:-}"
+OIDC_INTERNAL_PROVIDER_URL="${OIDC_INTERNAL_PROVIDER_URL:-${OIDC_PROVIDER_URL}}"
 OIDC_CLIENT_ID="${OIDC_CLIENT_ID:-}"
 OIDC_CLIENT_SECRET="${OIDC_CLIENT_SECRET:-}"
 
@@ -275,10 +276,12 @@ if [ -n "$OIDC_ENABLED" ]; then
           LogLevel: debug
           Secret: "${OIDC_SESSION_SECRET}"
           Provider:
-            Url: "${OIDC_PROVIDER_URL}"
+            Url: "${OIDC_INTERNAL_PROVIDER_URL}"
             ClientId: "${OIDC_CLIENT_ID}"
             ClientSecret: "${OIDC_CLIENT_SECRET}"
             UsePkce: true
+            ValidateIssuer: true
+            ValidIssuer: "${OIDC_PROVIDER_URL}"
           Scopes:
             - openid
             - profile
