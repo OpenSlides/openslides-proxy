@@ -3,3 +3,5 @@
       service: projector
       entryPoints:
         - main
+      middlewares:
+        - oidc-auth

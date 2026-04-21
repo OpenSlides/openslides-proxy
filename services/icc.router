@@ -3,3 +3,5 @@
       service: icc
       entryPoints:
         - main
+      middlewares:
+        - oidc-auth

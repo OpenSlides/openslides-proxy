@@ -3,3 +3,5 @@
       service: media
       entryPoints:
         - main
+      middlewares:
+        - oidc-auth

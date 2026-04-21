@@ -3,3 +3,5 @@
       service: presenter
       entryPoints:
         - main
+      middlewares:
+        - oidc-auth
