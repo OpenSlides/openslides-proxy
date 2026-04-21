@@ -1,6 +1,0 @@
-    keycloak:
-      loadBalancer:
-        servers:
-          - url: "http://${KEYCLOAK_HOST}:${KEYCLOAK_PORT}"
-        # Forward the original Host header to the backend service
-        passHostHeader: true

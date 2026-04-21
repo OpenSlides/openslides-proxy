@@ -1,5 +1,0 @@
-    keycloak:
-      rule: "PathPrefix(`/system/keycloak`)
-      service: keycloak
-      entryPoints:
-        - main

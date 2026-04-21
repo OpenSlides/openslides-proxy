@@ -43,7 +43,8 @@ CLIENT_HOST="${CLIENT_HOST:-client}"
 CLIENT_PORT="${CLIENT_PORT:-9001}"
 KEYCLOAK_HOST="${KEYCLOAK_HOST:-keycloak-server}"
 KEYCLOAK_HOST_PORT="${KEYCLOAK_HOST_PORT:-8080}"
-OIDC_KEYCLOAK_URL="${OIDC_KEYCLOAK_URL:-http://localhost:8080/realms/openslides}"
+OIDC_KEYCLOAK_URL="${OIDC_KEYCLOAK_URL:-http://localhost:8000/auth/realms/openslides}"
+OIDC_KEYCLOAK_URL_DOCKER="${OIDC_KEYCLOAK_URL_DOCKER:-http://keycloak-server:8080/realms/openslides}"
 OIDC_CLIENT_ID="${OIDC_CLIENT_ID:-proxy-client}"
 OIDC_CLIENT_SECRET="${OIDC_CLIENT_SECRET:-proxy-secret}"
 OIDC_SECRET="${OIDC_SECRET:-qvAcTGWBIGg7aWKCKRyUsTf33jK3lsmK}"
@@ -193,14 +194,6 @@ for service in $SERVICES; do
 done
 
 # OIDC Middleware
-cat >> "$DYNAMIC_CONFIG" << EOF
-  keycloak-server:
-    loadBalancer:
-      servers:
-        - url: "http://localhost:8080"
-      passHostHeader: true
-EOF
-
 echo "Enabling OIDC authentication middleware"
   cat >> "$DYNAMIC_CONFIG" << EOF
 
@@ -208,33 +201,14 @@ echo "Enabling OIDC authentication middleware"
     oidc-auth:
       plugin:
         traefik-oidc-auth:
-          LogLevel: debug
           Secret: "${OIDC_SECRET}"
           Provider:
-            Url: "${OIDC_KEYCLOAK_URL}"
+            Url: "${OIDC_KEYCLOAK_URL_DOCKER}"
             ClientId: "${OIDC_CLIENT_ID}"
             ClientSecret: "${OIDC_CLIENT_SECRET}"
-            UsePkce: true
             ValidateIssuer: true
             ValidIssuer: "${OIDC_KEYCLOAK_URL}"
-          Scopes:
-            - openid
-            - profile
-            - email
-          LoginUri: /login
-          CallbackUri: /callback
-          LogoutUri: /logout
-          UnauthorizedBehavior: Challenge
-          SessionCookie:
-            SameSite: lax
-            HttpOnly: false
-          Headers:
-            - Name: Authentication
-              Value: 'bearer {{ "{{ .accessToken }}" }}'
-            - Name: X-Forwarded-User
-              Value: '{{ "{{ .claims.preferred_username }}" }}'
-            - Name: X-Auth-Request-Email
-              Value: '{{ "{{ .claims.email }}" }}'
+          Scopes: ["openid", "profile", "email"]
 EOF
 
 # Finally start CMD
