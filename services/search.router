@@ -3,3 +3,5 @@
       service: search
       entryPoints:
         - main
+      middlewares:
+        - oidc-auth

@@ -3,3 +3,5 @@
       service: action
       entryPoints:
         - main
+      middlewares:
+        - oidc-auth

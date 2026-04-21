@@ -3,3 +3,5 @@
       service: vote
       entryPoints:
         - main
+      middlewares:
+        - oidc-auth

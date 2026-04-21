@@ -5,3 +5,5 @@
         - main
       # Priority ensures this catch-all route is evaluated last
       priority: 1
+      middlewares:
+        - oidc-auth

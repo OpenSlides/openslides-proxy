@@ -3,3 +3,5 @@
       service: autoupdate
       entryPoints:
         - main
+      middlewares:
+        - oidc-auth

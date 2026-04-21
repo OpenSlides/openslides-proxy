@@ -41,6 +41,13 @@ VOTE_HOST="${VOTE_HOST:-vote}"
 VOTE_PORT="${VOTE_PORT:-9013}"
 CLIENT_HOST="${CLIENT_HOST:-client}"
 CLIENT_PORT="${CLIENT_PORT:-9001}"
+KEYCLOAK_HOST="${KEYCLOAK_HOST:-keycloak-server}"
+KEYCLOAK_HOST_PORT="${KEYCLOAK_HOST_PORT:-8080}"
+OIDC_KEYCLOAK_URL="${OIDC_KEYCLOAK_URL:-http://localhost:8080/realms/openslides}"
+OIDC_KEYCLOAK_URL_DOCKER="${OIDC_KEYCLOAK_URL_DOCKER:-http://keycloak-server:8080/realms/openslides}"
+OIDC_CLIENT_ID="${OIDC_CLIENT_ID:-proxy-client}"
+OIDC_CLIENT_SECRET="${OIDC_CLIENT_SECRET:-proxy-secret}"
+OIDC_SECRET="${OIDC_SECRET:-qvAcTGWBIGg7aWKCKRyUsTf33jK3lsmK}"
 
 
 # =================================
@@ -49,6 +56,18 @@ CLIENT_PORT="${CLIENT_PORT:-9001}"
 
 # Generate base config from template
 envsubst < /templates/traefik.yml > "$TRAEFIK_CONFIG"
+
+# Add OIDC plugin
+echo "Adding OIDC Plugin"
+cat >> "$TRAEFIK_CONFIG" << 'EOF'
+
+experimental:
+  plugins:
+    traefik-oidc-auth:
+      moduleName: github.com/sevensolutions/traefik-oidc-auth
+      version: v0.19.0
+EOF
+
 
 # Add dashboard if enabled
 if [ -n "$ENABLE_DASHBOARD" ]; then
@@ -174,6 +193,23 @@ for service in $SERVICES; do
   envsubst < "$SERVICES_DIR/${service}.service" >> "$DYNAMIC_CONFIG"
 done
 
+# OIDC Middleware
+echo "Enabling OIDC authentication middleware"
+  cat >> "$DYNAMIC_CONFIG" << EOF
+
+  middlewares:
+    oidc-auth:
+      plugin:
+        traefik-oidc-auth:
+          Secret: "${OIDC_SECRET}"
+          Provider:
+            Url: "${OIDC_KEYCLOAK_URL_DOCKER}"
+            ClientId: "${OIDC_CLIENT_ID}"
+            ClientSecret: "${OIDC_CLIENT_SECRET}"
+            ValidateIssuer: true
+            ValidIssuer: "${OIDC_KEYCLOAK_URL}"
+          Scopes: ["openid", "profile", "email"]
+EOF
 
 # Finally start CMD
 exec "$@"
