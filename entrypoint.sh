@@ -37,14 +37,16 @@ MEDIA_HOST="${MEDIA_HOST:-media}"
 MEDIA_PORT="${MEDIA_PORT:-9006}"
 MANAGE_HOST="${MANAGE_HOST:-manage}"
 MANAGE_PORT="${MANAGE_PORT:-9008}"
+IDENTITY_HOST="${IDENTITY_HOST:-identity}"
+IDENTITY_PORT="${IDENTITY_PORT:-9014}"
 VOTE_HOST="${VOTE_HOST:-vote}"
 VOTE_PORT="${VOTE_PORT:-9013}"
 CLIENT_HOST="${CLIENT_HOST:-client}"
 CLIENT_PORT="${CLIENT_PORT:-9001}"
 KEYCLOAK_HOST="${KEYCLOAK_HOST:-keycloak-server}"
 KEYCLOAK_HOST_PORT="${KEYCLOAK_HOST_PORT:-8080}"
-OIDC_KEYCLOAK_URL="${OIDC_KEYCLOAK_URL:-http://localhost:8080/realms/openslides}"
-OIDC_KEYCLOAK_URL_DOCKER="${OIDC_KEYCLOAK_URL_DOCKER:-http://keycloak-server:8080/realms/openslides}"
+OIDC_ISSUER_URL="${OIDC_ISSUER_URL:-http://localhost:8080/realms/openslides}"
+OIDC_ISSUER_URL_DOCKER="${OIDC_ISSUER_URL_DOCKER:-http://keycloak-server:8080/realms/openslides}"
 OIDC_CLIENT_ID="${OIDC_CLIENT_ID:-proxy-client}"
 OIDC_CLIENT_SECRET="${OIDC_CLIENT_SECRET:-proxy-secret}"
 OIDC_SECRET="${OIDC_SECRET:-qvAcTGWBIGg7aWKCKRyUsTf33jK3lsmK}"
@@ -65,7 +67,7 @@ experimental:
   plugins:
     traefik-oidc-auth:
       moduleName: github.com/sevensolutions/traefik-oidc-auth
-      version: v0.19.0
+      version: v0.20.0
 EOF
 
 
@@ -202,14 +204,25 @@ echo "Enabling OIDC authentication middleware"
       plugin:
         traefik-oidc-auth:
           Secret: "${OIDC_SECRET}"
+          LogLevel: DEBUG
           Provider:
-            Url: "${OIDC_KEYCLOAK_URL_DOCKER}"
+            Url: "${OIDC_ISSUER_URL_DOCKER}"
             ClientId: "${OIDC_CLIENT_ID}"
             ClientSecret: "${OIDC_CLIENT_SECRET}"
             ValidateIssuer: true
-            ValidIssuer: "${OIDC_KEYCLOAK_URL}"
+            ValidIssuer: "${OIDC_ISSUER_URL}"
+          UnauthorizedBehavior: Forward
+          BypassAuthenticationRule: "PathPrefix(\`/\`)"
+          LoginUri: "/system/login"
+          LogoutUri: "/system/logout"
+          Headers:
+            - Name: "Authorization"
+              Value: "{{\`Bearer: {{ .accessToken }}\`}}"
+              IncludeWhen: "Public"
           Scopes: ["openid", "profile", "email"]
 EOF
+
+cat $DYNAMIC_CONFIG
 
 # Finally start CMD
 exec "$@"
