@@ -1,7 +1,6 @@
-    manage:
+    projector:
       loadBalancer:
         servers:
-          # h2c = HTTP/2 Cleartext (unencrypted) for gRPC
-          - url: "h2c://${MANAGE_HOST}:${MANAGE_PORT}"
+          - url: "http://${PROJECTOR_HOST}:${PROJECTOR_PORT}"
         # Forward the original Host header to the backend service
         passHostHeader: true

@@ -1,0 +1,5 @@
+    projector:
+      rule: "PathPrefix(`/system/projector`)"
+      service: projector
+      entryPoints:
+        - main
