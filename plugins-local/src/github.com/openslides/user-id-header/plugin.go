@@ -2,11 +2,11 @@ package myplugin
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
-
-	"github.com/golang-jwt/jwt/v4"
 )
 
 // Mandatory config struct
@@ -32,16 +32,6 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 	}, nil
 }
 
-type payloadKeycloak struct {
-	jwt.RegisteredClaims
-	KeycloakID string `json:"sub"`
-	SessionID  string `json:"sid"` // Keycloak session ID
-	Email      string `json:"email"`
-	Username   string `json:"preferred_username"`
-	ClientName string `json:"azp"`
-	OSUserID   string `json:"os_id"`
-}
-
 func extractUserID(r *http.Request) int {
 	header := r.Header.Get("Authorization")
 	encodedToken := strings.TrimPrefix(header, "Bearer: ")
@@ -51,18 +41,30 @@ func extractUserID(r *http.Request) int {
 		return 0
 	}
 
-	token, _, err := new(jwt.Parser).ParseUnverified(header, &payloadKeycloak{})
-	if err != nil {
-		fmt.Println("parsing token: %w", err)
+	parts := strings.Split(encodedToken, ".")
+	if len(parts) != 3 {
+		fmt.Println("JWT partition not length 3")
 		return 0
 	}
 
-	user_id, ok := token.Header["os_id"].(int)
-	if !ok {
-		fmt.Println("missing user id in token header")
+	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		fmt.Println("decoding token payload:", err)
 		return 0
 	}
-	return user_id
+
+	var claims map[string]interface{}
+	if err := json.Unmarshal(payload, &claims); err != nil {
+		fmt.Println("parsing token claims:", err)
+		return 0
+	}
+
+	osID, ok := claims["os_id"].(float64)
+	if !ok {
+		fmt.Println("missing or invalid os_id in token claims")
+		return 0
+	}
+	return int(osID)
 }
 
 func (p *UserIDHeaderInsert) ServeHTTP(w http.ResponseWriter, r *http.Request) {

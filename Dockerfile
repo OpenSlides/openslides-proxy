@@ -11,14 +11,15 @@ ENV APP_CONTEXT=${CONTEXT}
 RUN apk add --no-cache curl gettext
 
 # Copy configuration files
-COPY entrypoint.sh /entrypoint.sh
-COPY certs /certs
-COPY services /services
-COPY templates /templates
+COPY entrypoint.sh ./entrypoint.sh
+COPY certs ./certs
+COPY services ./services
+COPY templates ./templates
+COPY plugins-local ./plugins-local
 
 # Create dynamic config directory and make entrypoint executable
 RUN mkdir -p /etc/traefik/dynamic
-RUN chmod +x /entrypoint.sh
+RUN chmod +x ./entrypoint.sh
 
 # External Information
 LABEL org.opencontainers.image.title="OpenSlides Traefik Proxy"
