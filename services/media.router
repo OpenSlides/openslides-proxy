@@ -5,3 +5,4 @@
         - main
       middlewares:
         - oidc-auth
+        - user-id

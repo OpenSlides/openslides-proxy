@@ -68,6 +68,9 @@ experimental:
     traefik-oidc-auth:
       moduleName: github.com/sevensolutions/traefik-oidc-auth
       version: v0.20.0
+  localPlugins:
+    user-id-header:
+      moduleName: github.com/openslides/user-id-header
 EOF
 
 
@@ -220,6 +223,9 @@ echo "Enabling OIDC authentication middleware"
               Value: "{{\`Bearer: {{ .accessToken }}\`}}"
               IncludeWhen: "Public"
           Scopes: ["openid", "profile", "email"]
+    user-id:
+      plugin:
+        user-id-header: {}
 EOF
 
 cat $DYNAMIC_CONFIG

@@ -1,0 +1,5 @@
+displayName: User ID Header Insert
+type: middleware
+import: github.com/openslides/user-id-header
+summary: Appends user id to headers
+testData: {}
