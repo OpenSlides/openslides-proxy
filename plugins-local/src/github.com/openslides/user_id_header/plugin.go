@@ -1,4 +1,4 @@
-package myplugin
+package user_id_header
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -18,10 +19,8 @@ func CreateConfig() *Config {
 }
 
 type UserIDHeaderInsert struct {
-	next         http.Handler
-	name         string
-	sourceHeader string
-	targetHeader string
+	next http.Handler
+	name string
 }
 
 // Create new plugin instance
@@ -59,12 +58,37 @@ func extractUserID(r *http.Request) int {
 		return 0
 	}
 
-	osID, ok := claims["os_id"].(float64)
-	if !ok {
-		fmt.Println("missing or invalid os_id in token claims")
+	rawOsID, exists := claims["os_id"]
+	if !exists {
+		fmt.Println("missing os_id in token claims")
 		return 0
 	}
-	return int(osID)
+
+	osID, err := strconv.Atoi(fmt.Sprintf("%v", rawOsID))
+	if err != nil {
+		fmt.Println("invalid os_id value:", rawOsID)
+		return 0
+	}
+	return osID
+}
+
+type responseWriter struct {
+	http.ResponseWriter
+	userID    string
+	headerSet bool
+}
+
+func (w *responseWriter) WriteHeader(code int) {
+	w.Header().Set(userIDHeader, w.userID)
+	w.headerSet = true
+	w.ResponseWriter.WriteHeader(code)
+}
+
+func (w *responseWriter) Write(b []byte) (int, error) {
+	if !w.headerSet {
+		w.Header().Set(userIDHeader, w.userID)
+	}
+	return w.ResponseWriter.Write(b)
 }
 
 func (p *UserIDHeaderInsert) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -72,8 +96,15 @@ func (p *UserIDHeaderInsert) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	user_id := extractUserID(r)
 
 	// Write it as a new header
-	r.Header.Set("X-User-ID", fmt.Sprint(user_id))
+	r.Header.Set(userIDHeader, fmt.Sprint(user_id))
 
 	// Pass
-	p.next.ServeHTTP(w, r)
+	p.next.ServeHTTP(&responseWriter{
+		ResponseWriter: w,
+		userID:         fmt.Sprint(user_id),
+	}, r)
 }
+
+const (
+	userIDHeader string = "X-User-ID"
+)
