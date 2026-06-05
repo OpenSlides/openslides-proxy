@@ -37,6 +37,7 @@ func extractUserID(r *http.Request) int {
 
 	if header == encodedToken {
 		// No token. Handle the request as public access requst.
+		fmt.Println("No token")
 		return 0
 	}
 
