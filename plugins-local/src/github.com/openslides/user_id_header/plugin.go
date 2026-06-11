@@ -37,37 +37,37 @@ func extractUserID(r *http.Request) int {
 
 	if header == encodedToken {
 		// No token. Handle the request as public access requst.
-		fmt.Println("No token")
+		fmt.Println("header error: no token")
 		return 0
 	}
 
 	parts := strings.Split(encodedToken, ".")
 	if len(parts) != 3 {
-		fmt.Println("JWT partition not length 3")
+		fmt.Println("header error: JWT partition not length 3")
 		return 0
 	}
 
 	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
 	if err != nil {
-		fmt.Println("decoding token payload:", err)
+		fmt.Println("header error: decoding token payload:", err)
 		return 0
 	}
 
 	var claims map[string]interface{}
 	if err := json.Unmarshal(payload, &claims); err != nil {
-		fmt.Println("parsing token claims:", err)
+		fmt.Println("header error: parsing token claims:", err)
 		return 0
 	}
 
 	rawOsID, exists := claims["os_id"]
 	if !exists {
-		fmt.Println("missing os_id in token claims")
+		fmt.Println("header error: missing os_id in token claims")
 		return 0
 	}
 
 	osID, err := strconv.Atoi(fmt.Sprintf("%v", rawOsID))
 	if err != nil {
-		fmt.Println("invalid os_id value:", rawOsID)
+		fmt.Println("header error: invalid os_id value:", rawOsID)
 		return 0
 	}
 	return osID
@@ -92,11 +92,13 @@ func (w *responseWriter) Write(b []byte) (int, error) {
 	return w.ResponseWriter.Write(b)
 }
 
+/*
 func (w *responseWriter) Flush() {
 	if f, ok := w.ResponseWriter.(http.Flusher); ok {
 		f.Flush()
 	}
 }
+*/
 
 func (p *UserIDHeaderInsert) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Extract User ID

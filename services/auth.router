@@ -3,3 +3,6 @@
       service: auth
       entryPoints:
         - main
+      middlewares:
+        - oidc-auth
+        - user-id
