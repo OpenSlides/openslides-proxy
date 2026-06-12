@@ -53,7 +53,7 @@ func extractUserID(r *http.Request) int {
 		return 0
 	}
 
-	var claims map[string]interface{}
+	var claims map[string]any
 	if err := json.Unmarshal(payload, &claims); err != nil {
 		fmt.Println("header error: parsing token claims:", err)
 		return 0
@@ -75,6 +75,7 @@ func extractUserID(r *http.Request) int {
 
 type responseWriter struct {
 	http.ResponseWriter
+	flusher   http.Flusher
 	userID    string
 	headerSet bool
 }
@@ -89,16 +90,20 @@ func (w *responseWriter) Write(b []byte) (int, error) {
 	if !w.headerSet {
 		w.Header().Set(userIDHeader, w.userID)
 	}
-	return w.ResponseWriter.Write(b)
+
+	n, err := w.ResponseWriter.Write(b)
+	if w.flusher != nil {
+		w.flusher.Flush()
+	}
+
+	return n, err
 }
 
-/*
 func (w *responseWriter) Flush() {
-	if f, ok := w.ResponseWriter.(http.Flusher); ok {
-		f.Flush()
+	if w.flusher != nil {
+		w.flusher.Flush()
 	}
 }
-*/
 
 func (p *UserIDHeaderInsert) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Extract User ID
@@ -107,8 +112,14 @@ func (p *UserIDHeaderInsert) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Write it as a new header
 	r.Header.Set(userIDHeader, fmt.Sprint(user_id))
 
+	var flusher http.Flusher
+	if f, ok := w.(http.Flusher); ok {
+		flusher = f
+	}
+
 	// Pass
 	p.next.ServeHTTP(&responseWriter{
+		flusher:        flusher,
 		ResponseWriter: w,
 		userID:         fmt.Sprint(user_id),
 	}, r)
