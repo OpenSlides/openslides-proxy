@@ -71,6 +71,8 @@ experimental:
   localPlugins:
     user_id_header:
       moduleName: github.com/openslides/user_id_header
+    access_token_blocklist:
+      moduleName: github.com/openslides/access_token_blocklist
 EOF
 
 
@@ -226,6 +228,9 @@ echo "Enabling OIDC authentication middleware"
     user-id:
       plugin:
         user_id_header: {}
+    access-token-blocklist:
+      plugin:
+        access_token_blocklist: {}
 EOF
 
 cat $DYNAMIC_CONFIG

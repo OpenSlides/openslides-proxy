@@ -1,0 +1,5 @@
+displayName: Access Token Blocklist
+type: middleware
+import: github.com/openslides/access_token_blocklist
+summary: Invalidates access tokens linked to a logout call
+testData: {}
