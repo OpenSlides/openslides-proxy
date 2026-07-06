@@ -6,3 +6,4 @@
       middlewares:
         - oidc-auth
         - user-id
+        - access-token-blocklist

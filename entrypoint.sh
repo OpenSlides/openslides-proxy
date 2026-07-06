@@ -48,7 +48,6 @@ KEYCLOAK_HOST_PORT="${KEYCLOAK_HOST_PORT:-8080}"
 OIDC_ISSUER_URL="${OIDC_ISSUER_URL:-http://localhost:8080/realms/openslides}"
 OIDC_ISSUER_URL_DOCKER="${OIDC_ISSUER_URL_DOCKER:-http://keycloak-server:8080/realms/openslides}"
 OIDC_CLIENT_ID="${OIDC_CLIENT_ID:-proxy-client}"
-OIDC_CLIENT_SECRET="${OIDC_CLIENT_SECRET:-proxy-secret}"
 OIDC_SECRET="${OIDC_SECRET:-qvAcTGWBIGg7aWKCKRyUsTf33jK3lsmK}"
 
 
@@ -213,7 +212,7 @@ echo "Enabling OIDC authentication middleware"
           Provider:
             Url: "${OIDC_ISSUER_URL_DOCKER}"
             ClientId: "${OIDC_CLIENT_ID}"
-            ClientSecret: "${OIDC_CLIENT_SECRET}"
+            UsePkce: true
             ValidateIssuer: true
             ValidIssuer: "${OIDC_ISSUER_URL}"
           UnauthorizedBehavior: Forward
@@ -228,9 +227,6 @@ echo "Enabling OIDC authentication middleware"
     user-id:
       plugin:
         user_id_header: {}
-    access-token-blocklist:
-      plugin:
-        access_token_blocklist: {}
 EOF
 
 cat $DYNAMIC_CONFIG

@@ -1,6 +1,0 @@
-    identity:
-      loadBalancer:
-        servers:
-          - url: "http://${IDENTITY_HOST}:${IDENTITY_PORT}"
-        # Forward the original Host header to the backend service
-        passHostHeader: true

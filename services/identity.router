@@ -1,8 +1,0 @@
-    identity:
-      rule: "PathPrefix(`/system/identity`)"
-      service: identity
-      entryPoints:
-        - main
-      middlewares:
-        - oidc-auth
-        - user-id
