@@ -43,10 +43,10 @@ VOTE_HOST="${VOTE_HOST:-vote}"
 VOTE_PORT="${VOTE_PORT:-9013}"
 CLIENT_HOST="${CLIENT_HOST:-client}"
 CLIENT_PORT="${CLIENT_PORT:-9001}"
-KEYCLOAK_HOST="${KEYCLOAK_HOST:-keycloak-server}"
-KEYCLOAK_HOST_PORT="${KEYCLOAK_HOST_PORT:-8080}"
+IDP_HOST="${IDP_HOST:-zitadel-api}"
+IDP_HOST_PORT="${IDP_HOST_PORT:-8080}"
 OIDC_ISSUER_URL="${OIDC_ISSUER_URL:-http://localhost:8080/realms/openslides}"
-OIDC_ISSUER_URL_DOCKER="${OIDC_ISSUER_URL_DOCKER:-http://keycloak-server:8080/realms/openslides}"
+OIDC_ISSUER_URL_DOCKER="${OIDC_ISSUER_URL_DOCKER:-http://zitadel-api:8080/realms/openslides}"
 OIDC_CLIENT_ID="${OIDC_CLIENT_ID:-proxy-client}"
 OIDC_SECRET="${OIDC_SECRET:-qvAcTGWBIGg7aWKCKRyUsTf33jK3lsmK}"
 
@@ -224,6 +224,10 @@ echo "Enabling OIDC authentication middleware"
               Value: "{{\`Bearer: {{ .accessToken }}\`}}"
               IncludeWhen: "Public"
           Scopes: ["openid", "profile", "email"]
+          Authorization:
+            AssertClaims:
+              - Name: roles
+                AnyOf: ["admin", "media"]
     user-id:
       plugin:
         user_id_header: {}
