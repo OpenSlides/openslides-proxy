@@ -8,14 +8,15 @@ WORKDIR /app
 ENV APP_CONTEXT=${CONTEXT}
 
 # curl for healthcheck, gettext for templating (envsubst)
-RUN apk add --no-cache curl gettext
+RUN apk add --no-cache curl gettext jq
 
 # Copy configuration files
 COPY entrypoint.sh /entrypoint.sh
+COPY import-data.json /import-data.json
 COPY certs /certs
 COPY services /services
 COPY templates /templates
-COPY plugins-local ./plugins-local
+COPY plugins-local /plugins-local
 
 # Create dynamic config directory and make entrypoint executable
 RUN mkdir -p /etc/traefik/dynamic

@@ -45,15 +45,77 @@ CLIENT_HOST="${CLIENT_HOST:-client}"
 CLIENT_PORT="${CLIENT_PORT:-9001}"
 IDP_HOST="${IDP_HOST:-zitadel-api}"
 IDP_HOST_PORT="${IDP_HOST_PORT:-8080}"
+INSTANCE_URL="${INSTANCE_URL:-http://localhost:8080}"
 OIDC_ISSUER_URL="${OIDC_ISSUER_URL:-http://localhost:8080/realms/openslides}"
+OIDC_API_URL="${OIDC_ISSUER_URL_DOCKER:-http://zitadel-api:8080}"
 OIDC_ISSUER_URL_DOCKER="${OIDC_ISSUER_URL_DOCKER:-http://zitadel-api:8080/realms/openslides}"
-OIDC_CLIENT_ID="${OIDC_CLIENT_ID:-proxy-client}"
-OIDC_SECRET="${OIDC_SECRET:-qvAcTGWBIGg7aWKCKRyUsTf33jK3lsmK}"
 
 
 # =================================
 # = Build static / install config =
 # =================================
+
+# Get Zitadel Client ID
+OIDC_PAT_PATH="/zitadel/bootstrap/admin.pat"
+OIDC_PAT="$(cat ${OIDC_PAT_PATH})"
+
+# echo $OIDC_PAT
+
+# Import Data
+
+#PAYLOAD=$(cat <<EOF
+#{
+#  "timeout" : "5m",
+#  "dataOrgs": $(cat /import-data.json)
+#}
+#EOF
+#)
+
+#echo $PAYLOAD
+
+#RESPONSE=$(curl -X POST "$OIDC_API_URL/admin/v1/import" \
+#  --header "Authorization: Bearer ${OIDC_PAT}" \
+#  --header "Content-Type: application/json"\
+#  --header "Host: ${INSTANCE_URL}" \
+#  --data "${PAYLOAD}")
+
+#echo $PAYLOAD
+
+#OIDC_APP_INFORMATION=$(curl -sS -X POST \
+#  "${OIDC_API_URL}/zitadel.application.v2.ApplicationService/ListApplications" \
+#  -H "Authorization: Bearer $OIDC_PAT" \
+#  -H "Content-Type: application/json" \
+#  -H "Host: ${INSTANCE_URL}" \
+#  -d '{}')
+
+#OIDC_CLIENT_ID="$(echo $OIDC_APP_INFORMATION | jq -r '.applications[0].oidcConfiguration.clientId')"
+#OIDC_PROJECT_ID="$(echo $OIDC_APP_INFORMATION | jq -r '.applications[0].projectId')"
+#OIDC_APPLICATION_ID="$(echo $OIDC_APP_INFORMATION | jq -r '.applications[0].applicationId')"
+
+#echo "CLIENT ID: --- $OIDC_CLIENT_ID"
+#echo "Project ID: --- $OIDC_PROJECT_ID"
+#echo "App ID: --- $OIDC_APPLICATION_ID"
+
+#if [ "$OIDC_CLIENT_ID" == "null" ]
+#then
+#  echo "No client ID has been returned by zitadel"
+#  echo "Response: $RESPONSE"
+#  sleep infinity
+#fi
+
+#OIDC_CLIENT_SECRET=$(curl -sS -X POST \
+#  "${OIDC_API_URL}/zitadel.application.v2.ApplicationService/GenerateClientSecret" \
+#  -H "Host:  ${INSTANCE_URL}" \
+#  -H "Authorization: Bearer $OIDC_PAT" \
+#  -H "Content-Type: application/json" \
+#  -H "Connect-Protocol-Version: 1" \
+#  -d '{
+#    \"projectId\": \"$OIDC_PROJECT_ID\",
+#    \"applicationId\": \"$OIDC_APPLICATION_ID\"
+#  }' \
+#| jq -r '.clientSecret')
+
+#echo "CLIENT SECRET: --- $OIDC_CLIENT_SECRET"
 
 # Generate base config from template
 envsubst < /templates/traefik.yml > "$TRAEFIK_CONFIG"
@@ -70,8 +132,6 @@ experimental:
   localPlugins:
     user_id_header:
       moduleName: github.com/openslides/user_id_header
-    access_token_blocklist:
-      moduleName: github.com/openslides/access_token_blocklist
 EOF
 
 
