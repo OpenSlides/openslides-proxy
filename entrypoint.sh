@@ -56,8 +56,9 @@ OIDC_ISSUER_URL_DOCKER="${OIDC_ISSUER_URL_DOCKER:-http://zitadel-api:8080/realms
 # =================================
 
 # Get Zitadel Client ID
-OIDC_PAT_PATH="/zitadel/bootstrap/admin.pat"
-OIDC_PAT="$(cat ${OIDC_PAT_PATH})"
+OIDC_PAT="$(cat /zitadel/bootstrap/admin.pat)"
+OIDC_CLIENT_ID="$(cat /zitadel/bootstrap/client-id)"
+OIDC_CLIENT_SECRET="$(cat /zitadel/bootstrap/client-secret)"
 
 # echo $OIDC_PAT
 
@@ -267,7 +268,6 @@ echo "Enabling OIDC authentication middleware"
     oidc-auth:
       plugin:
         traefik-oidc-auth:
-          Secret: "${OIDC_SECRET}"
           LogLevel: DEBUG
           Provider:
             Url: "${OIDC_ISSUER_URL_DOCKER}"
