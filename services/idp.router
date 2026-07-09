@@ -1,0 +1,10 @@
+    zitadel-api:
+      rule: "!PathPrefix(`/ui/v2/login`)"
+      service: zitadel-api
+      entryPoints:
+        - main
+    zitadel-login:
+      rule: "PathPrefix(`/ui/v2/login`)"
+      service: zitadel-login
+      entryPoints:
+        - main

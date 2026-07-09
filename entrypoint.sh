@@ -45,10 +45,10 @@ CLIENT_HOST="${CLIENT_HOST:-client}"
 CLIENT_PORT="${CLIENT_PORT:-9001}"
 IDP_HOST="${IDP_HOST:-zitadel-api}"
 IDP_HOST_PORT="${IDP_HOST_PORT:-8080}"
-INSTANCE_URL="${INSTANCE_URL:-http://localhost:8080}"
-OIDC_ISSUER_URL="${OIDC_ISSUER_URL:-http://localhost:8080/realms/openslides}"
+INSTANCE_URL="${INSTANCE_URL:-https://localhost:8000}"
+OIDC_ISSUER_URL="${OIDC_ISSUER_URL:-https://localhost:8000}"
 OIDC_API_URL="${OIDC_ISSUER_URL_DOCKER:-http://zitadel-api:8080}"
-OIDC_ISSUER_URL_DOCKER="${OIDC_ISSUER_URL_DOCKER:-http://zitadel-api:8080/realms/openslides}"
+OIDC_ISSUER_URL_DOCKER="${OIDC_ISSUER_URL_DOCKER:-http://zitadel-api:8080}"
 
 
 # =================================
@@ -270,14 +270,15 @@ echo "Enabling OIDC authentication middleware"
         traefik-oidc-auth:
           LogLevel: DEBUG
           Provider:
-            Url: "${OIDC_ISSUER_URL_DOCKER}"
+            Url: "${OIDC_ISSUER_URL}"
             ClientId: "${OIDC_CLIENT_ID}"
             UsePkce: true
             ValidateIssuer: true
             ValidIssuer: "${OIDC_ISSUER_URL}"
+            InsecureSkipVerify: true
           UnauthorizedBehavior: Forward
           BypassAuthenticationRule: "PathPrefix(\`/\`)"
-          LoginUri: "/system/login"
+          LoginUri: "/ui/v2/login/login"
           LogoutUri: "/system/logout"
           Headers:
             - Name: "Authorization"

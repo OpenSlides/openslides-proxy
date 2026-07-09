@@ -1,0 +1,11 @@
+    zitadel-api:
+      loadBalancer:
+        servers:
+          - url: "h2c://zitadel-api:8080"
+        # Forward the original Host header to the backend service
+        passHostHeader: true
+    zitadel-login:
+      loadBalancer:
+        servers:
+          - url: "http://zitadel-login:3000"
+        passHostHeader: true
