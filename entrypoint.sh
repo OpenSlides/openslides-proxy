@@ -46,9 +46,8 @@ CLIENT_PORT="${CLIENT_PORT:-9001}"
 IDP_HOST="${IDP_HOST:-zitadel-api}"
 IDP_HOST_PORT="${IDP_HOST_PORT:-8080}"
 INSTANCE_URL="${INSTANCE_URL:-https://localhost:8000}"
-OIDC_ISSUER_URL="${OIDC_ISSUER_URL:-https://localhost:8000}"
-OIDC_API_URL="${OIDC_ISSUER_URL_DOCKER:-http://zitadel-api:8080}"
-OIDC_ISSUER_URL_DOCKER="${OIDC_ISSUER_URL_DOCKER:-http://zitadel-api:8080}"
+IDP_URL_EXTERNAL="${IDP_URL_EXTERNAL:-https://localhost:8000}"
+IDP_URL_INTERNAL="${IDP_URL_INTERNAL:-http://zitadel-api:8080}"
 
 
 # =================================
@@ -56,11 +55,11 @@ OIDC_ISSUER_URL_DOCKER="${OIDC_ISSUER_URL_DOCKER:-http://zitadel-api:8080}"
 # =================================
 
 # Get Zitadel Client ID
-OIDC_PAT="$(cat /zitadel/bootstrap/admin.pat)"
-OIDC_CLIENT_ID="$(cat /zitadel/bootstrap/client-id)"
-OIDC_CLIENT_SECRET="$(cat /zitadel/bootstrap/client-secret)"
+IDP_PAT="$(cat /zitadel/bootstrap/admin.pat)"
+IDP_CLIENT_ID="$(cat /zitadel/bootstrap/client-id)"
+IDP_CLIENT_SECRET="$(cat /zitadel/bootstrap/client-secret)"
 
-# echo $OIDC_PAT
+# echo $IDP_PAT
 
 # Import Data
 
@@ -74,49 +73,49 @@ OIDC_CLIENT_SECRET="$(cat /zitadel/bootstrap/client-secret)"
 
 #echo $PAYLOAD
 
-#RESPONSE=$(curl -X POST "$OIDC_API_URL/admin/v1/import" \
-#  --header "Authorization: Bearer ${OIDC_PAT}" \
+#RESPONSE=$(curl -X POST "$IDP_API_URL/admin/v1/import" \
+#  --header "Authorization: Bearer ${IDP_PAT}" \
 #  --header "Content-Type: application/json"\
 #  --header "Host: ${INSTANCE_URL}" \
 #  --data "${PAYLOAD}")
 
 #echo $PAYLOAD
 
-#OIDC_APP_INFORMATION=$(curl -sS -X POST \
-#  "${OIDC_API_URL}/zitadel.application.v2.ApplicationService/ListApplications" \
-#  -H "Authorization: Bearer $OIDC_PAT" \
+#IDP_APP_INFORMATION=$(curl -sS -X POST \
+#  "${IDP_API_URL}/zitadel.application.v2.ApplicationService/ListApplications" \
+#  -H "Authorization: Bearer $IDP_PAT" \
 #  -H "Content-Type: application/json" \
 #  -H "Host: ${INSTANCE_URL}" \
 #  -d '{}')
 
-#OIDC_CLIENT_ID="$(echo $OIDC_APP_INFORMATION | jq -r '.applications[0].oidcConfiguration.clientId')"
-#OIDC_PROJECT_ID="$(echo $OIDC_APP_INFORMATION | jq -r '.applications[0].projectId')"
-#OIDC_APPLICATION_ID="$(echo $OIDC_APP_INFORMATION | jq -r '.applications[0].applicationId')"
+#IDP_CLIENT_ID="$(echo $IDP_APP_INFORMATION | jq -r '.applications[0].oidcConfiguration.clientId')"
+#IDP_PROJECT_ID="$(echo $IDP_APP_INFORMATION | jq -r '.applications[0].projectId')"
+#IDP_APPLICATION_ID="$(echo $IDP_APP_INFORMATION | jq -r '.applications[0].applicationId')"
 
-#echo "CLIENT ID: --- $OIDC_CLIENT_ID"
-#echo "Project ID: --- $OIDC_PROJECT_ID"
-#echo "App ID: --- $OIDC_APPLICATION_ID"
+#echo "CLIENT ID: --- $IDP_CLIENT_ID"
+#echo "Project ID: --- $IDP_PROJECT_ID"
+#echo "App ID: --- $IDP_APPLICATION_ID"
 
-#if [ "$OIDC_CLIENT_ID" == "null" ]
+#if [ "$IDP_CLIENT_ID" == "null" ]
 #then
 #  echo "No client ID has been returned by zitadel"
 #  echo "Response: $RESPONSE"
 #  sleep infinity
 #fi
 
-#OIDC_CLIENT_SECRET=$(curl -sS -X POST \
-#  "${OIDC_API_URL}/zitadel.application.v2.ApplicationService/GenerateClientSecret" \
+#IDP_CLIENT_SECRET=$(curl -sS -X POST \
+#  "${IDP_API_URL}/zitadel.application.v2.ApplicationService/GenerateClientSecret" \
 #  -H "Host:  ${INSTANCE_URL}" \
-#  -H "Authorization: Bearer $OIDC_PAT" \
+#  -H "Authorization: Bearer $IDP_PAT" \
 #  -H "Content-Type: application/json" \
 #  -H "Connect-Protocol-Version: 1" \
 #  -d '{
-#    \"projectId\": \"$OIDC_PROJECT_ID\",
-#    \"applicationId\": \"$OIDC_APPLICATION_ID\"
+#    \"projectId\": \"$IDP_PROJECT_ID\",
+#    \"applicationId\": \"$IDP_APPLICATION_ID\"
 #  }' \
 #| jq -r '.clientSecret')
 
-#echo "CLIENT SECRET: --- $OIDC_CLIENT_SECRET"
+#echo "CLIENT SECRET: --- $IDP_CLIENT_SECRET"
 
 # Generate base config from template
 envsubst < /templates/traefik.yml > "$TRAEFIK_CONFIG"
@@ -270,11 +269,11 @@ echo "Enabling OIDC authentication middleware"
         traefik-oidc-auth:
           LogLevel: DEBUG
           Provider:
-            Url: "${OIDC_ISSUER_URL}"
-            ClientId: "${OIDC_CLIENT_ID}"
+            Url: "${IDP_URL_EXTERNAL}"
+            ClientId: "${IDP_CLIENT_ID}"
             UsePkce: true
             ValidateIssuer: true
-            ValidIssuer: "${OIDC_ISSUER_URL}"
+            ValidIssuer: "${IDP_URL_EXTERNAL}"
             InsecureSkipVerify: true
           UnauthorizedBehavior: Forward
           BypassAuthenticationRule: "PathPrefix(\`/\`)"

@@ -12,7 +12,6 @@ RUN apk add --no-cache curl gettext jq
 
 # Copy configuration files
 COPY entrypoint.sh /entrypoint.sh
-COPY import-data.json /import-data.json
 COPY certs /certs
 COPY services /services
 COPY templates /templates
