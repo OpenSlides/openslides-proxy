@@ -46,7 +46,7 @@ CLIENT_PORT="${CLIENT_PORT:-9001}"
 IDP_HOST="${IDP_HOST:-zitadel-api}"
 IDP_HOST_PORT="${IDP_HOST_PORT:-8080}"
 INSTANCE_URL="${INSTANCE_URL:-https://localhost:8000}"
-IDP_URL_EXTERNAL="${IDP_URL_EXTERNAL:-https://localhost:8000}"
+IDP_URL_EXTERNAL="${IDP_URL_EXTERNAL:-https://localhost:8800}"
 IDP_URL_INTERNAL="${IDP_URL_INTERNAL:-http://zitadel-api:8080}"
 
 
@@ -166,6 +166,29 @@ elif [ -n "$ENABLE_AUTO_HTTPS" ]; then
       tls:
         domains:
           - main: ${EXTERNAL_ADDRESS}
+        certResolver: acmeResolver
+EOF
+fi
+
+# Add entryPoints in accordance to HTTPS related variables
+cat >> "$TRAEFIK_CONFIG" << 'EOF'
+  idp:
+    address: ":8800"
+    http:
+EOF
+
+if [ -n "$ENABLE_LOCAL_HTTPS" ]; then
+  # Define tls property, which will cause all routers to terminate TLS and
+  # foward decrypted traffic.
+  cat >> "$TRAEFIK_CONFIG" << 'EOF'
+      tls: {}
+EOF
+elif [ -n "$ENABLE_AUTO_HTTPS" ]; then
+  # Also needs tls property, but with additional information for cert retrieval
+  cat >> "$TRAEFIK_CONFIG" << EOF
+      tls:
+        domains:
+          - idp: ${IDP_EXTERNAL_ADDRESS}
         certResolver: acmeResolver
 EOF
   # Additionally a plain HTTP endpoint to answer ACME challenges on must be
