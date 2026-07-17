@@ -287,6 +287,27 @@ echo "Enabling OIDC authentication middleware"
   cat >> "$DYNAMIC_CONFIG" << EOF
 
   middlewares:
+    zitadel-cors:
+      headers:
+        accessControlAllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+          - PATCH
+        accessControlAllowHeaders:
+          - Authorization
+          - Content-Type
+          - X-CSRF-Token
+          - Accept
+          - Origin
+          - Link
+        accessControlAllowOriginList:
+          - "https://localhost:8000"
+        accessControlMaxAge: 600
+        addVaryHeader: true
+        accessControlAllowCredentials: true
     oidc-auth:
       plugin:
         traefik-oidc-auth:
@@ -299,8 +320,8 @@ echo "Enabling OIDC authentication middleware"
             ValidIssuer: "${IDP_URL_EXTERNAL}"
             InsecureSkipVerify: true
           UnauthorizedBehavior: Forward
-          BypassAuthenticationRule: "PathPrefix(\`/\`)"
-          LoginUri: "/ui/v2/login/login"
+          LoginUri: "/login"
+          CallbackUri: "https://localhost:8000/"
           LogoutUri: "/system/logout"
           Headers:
             - Name: "Authorization"
