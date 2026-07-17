@@ -46,8 +46,8 @@ CLIENT_HOST="${CLIENT_HOST:-client}"
 CLIENT_PORT="${CLIENT_PORT:-9001}"
 IDP_HOST="${IDP_HOST:-zitadel-api}"
 IDP_HOST_PORT="${IDP_HOST_PORT:-8080}"
-IDP_LOGIN_HOST="${IDP_HOST:-zitadel-login}"
-IDP_LOGIN_HOST_PORT="${IDP_HOST_PORT:-3000}"
+IDP_LOGIN_HOST="${IDP_LOGIN_HOST:-zitadel-login}"
+IDP_LOGIN_HOST_PORT="${IDP_LOGIN_HOST_PORT:-3000}"
 INSTANCE_URL="${INSTANCE_URL:-https://localhost:8000}"
 IDP_URL_EXTERNAL="${IDP_URL_EXTERNAL:-https://localhost:8800}"
 IDP_URL_INTERNAL="${IDP_URL_INTERNAL:-http://zitadel-api:8080}"
@@ -323,17 +323,14 @@ echo "Enabling OIDC authentication middleware"
             ValidIssuer: "${IDP_URL_INTERNAL}"
             InsecureSkipVerify: true
           UnauthorizedBehavior: Forward
-          LoginUri: "/login"
+          BypassAuthenticationRule: "PathPrefix(\`/\`)"
+          LoginUri: "/system/login"
           LogoutUri: "/system/logout"
           Headers:
             - Name: "Authorization"
               Value: "{{\`Bearer: {{ .accessToken }}\`}}"
               IncludeWhen: "Public"
           Scopes: ["openid", "profile", "email"]
-          Authorization:
-            AssertClaims:
-              - Name: roles
-                AnyOf: ["admin", "media"]
     user-id:
       plugin:
         user_id_header: {}
