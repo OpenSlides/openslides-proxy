@@ -1,11 +1,11 @@
     zitadel-api:
       loadBalancer:
         servers:
-          - url: "h2c://zitadel-api:8080"
+          - url: "h2c://${IDP_HOST}:${IDP_HOST_PORT}"
         # Forward the original Host header to the backend service
         passHostHeader: true
     zitadel-login:
       loadBalancer:
         servers:
-          - url: "http://zitadel-login:3000"
+          - url: "http://${IDP_LOGIN_HOST}:${IDP_LOGIN_HOST_PORT}"
         passHostHeader: true

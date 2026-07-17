@@ -39,6 +39,7 @@ elif type openssl >/dev/null 2>&1; then
 
     openssl req -x509 -newkey rsa:4096 -nodes -days 3650 \
             -subj "/C=DE/O=Selfsigned Test/CN=localhost" \
+            -addext "subjectAltName=DNS:localhost,DNS:*.localhost,DNS:localhost.localdomain,DNS:*.localhost.localdomain,IP:127.0.0.1,IP:::1" \
             -keyout certs/key.pem -out certs/cert.pem
 
     echo "Self-signed certificate created with openssl"

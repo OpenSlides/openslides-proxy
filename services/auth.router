@@ -1,0 +1,8 @@
+    auth:
+      rule: "PathPrefix(`/system/auth`) || PathPrefix(`/system/saml`)"
+      service: auth
+      entryPoints:
+        - main
+      middlewares:
+        - oidc-auth
+        - user-id

@@ -15,6 +15,7 @@ HTTPS_CERT_FILE="${HTTPS_CERT_FILE:-/certs/cert.pem}"
 HTTPS_KEY_FILE="${HTTPS_KEY_FILE:-/certs/key.pem}"
 ENABLE_AUTO_HTTPS="${ENABLE_AUTO_HTTPS:-}"
 EXTERNAL_ADDRESS="${EXTERNAL_ADDRESS:-openslides.example.com}"
+EXTERNAL_ADDRESS_IDP="${EXTERNAL_ADDRESS_IDP:-https://localhost:8800}"
 ACME_ENDPOINT="${ACME_ENDPOINT:-}"
 ACME_EMAIL="${ACME_EMAIL:-}"
 
@@ -45,6 +46,8 @@ CLIENT_HOST="${CLIENT_HOST:-client}"
 CLIENT_PORT="${CLIENT_PORT:-9001}"
 IDP_HOST="${IDP_HOST:-zitadel-api}"
 IDP_HOST_PORT="${IDP_HOST_PORT:-8080}"
+IDP_LOGIN_HOST="${IDP_HOST:-zitadel-login}"
+IDP_LOGIN_HOST_PORT="${IDP_HOST_PORT:-3000}"
 INSTANCE_URL="${INSTANCE_URL:-https://localhost:8000}"
 IDP_URL_EXTERNAL="${IDP_URL_EXTERNAL:-https://localhost:8800}"
 IDP_URL_INTERNAL="${IDP_URL_INTERNAL:-http://zitadel-api:8080}"
@@ -188,7 +191,7 @@ elif [ -n "$ENABLE_AUTO_HTTPS" ]; then
   cat >> "$TRAEFIK_CONFIG" << EOF
       tls:
         domains:
-          - idp: ${IDP_EXTERNAL_ADDRESS}
+          - idp: ${EXTERNAL_ADDRESS_IDP}
         certResolver: acmeResolver
 EOF
   # Additionally a plain HTTP endpoint to answer ACME challenges on must be
@@ -313,15 +316,12 @@ echo "Enabling OIDC authentication middleware"
         traefik-oidc-auth:
           LogLevel: DEBUG
           Provider:
-            Url: "${IDP_URL_EXTERNAL}"
+            Url: "${IDP_URL_INTERNAL}"
             ClientId: "${IDP_CLIENT_ID}"
             UsePkce: true
-            ValidateIssuer: true
-            ValidIssuer: "${IDP_URL_EXTERNAL}"
             InsecureSkipVerify: true
           UnauthorizedBehavior: Forward
           LoginUri: "/login"
-          CallbackUri: "https://localhost:8000/"
           LogoutUri: "/system/logout"
           Headers:
             - Name: "Authorization"
