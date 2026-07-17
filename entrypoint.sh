@@ -316,9 +316,11 @@ echo "Enabling OIDC authentication middleware"
         traefik-oidc-auth:
           LogLevel: DEBUG
           Provider:
-            Url: "${IDP_URL_INTERNAL}"
+            Url: "${IDP_URL_EXTERNAL}"
             ClientId: "${IDP_CLIENT_ID}"
             UsePkce: true
+            ValidateIssuer: true
+            ValidIssuer: "${IDP_URL_INTERNAL}"
             InsecureSkipVerify: true
           UnauthorizedBehavior: Forward
           LoginUri: "/login"
