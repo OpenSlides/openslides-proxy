@@ -50,7 +50,7 @@ IDP_LOGIN_HOST="${IDP_LOGIN_HOST:-zitadel-login}"
 IDP_LOGIN_HOST_PORT="${IDP_LOGIN_HOST_PORT:-3000}"
 INSTANCE_URL="${INSTANCE_URL:-https://localhost:8000}"
 IDP_URL_EXTERNAL="${IDP_URL_EXTERNAL:-https://localhost:8800}"
-IDP_URL_INTERNAL="${IDP_URL_INTERNAL:-http://zitadel-api:8080}"
+IDP_URL_INTERNAL="${IDP_URL_INTERNAL:-h2c://zitadel-api:8080}"
 
 
 # =================================
@@ -60,7 +60,7 @@ IDP_URL_INTERNAL="${IDP_URL_INTERNAL:-http://zitadel-api:8080}"
 # Get Zitadel Client ID
 IDP_PAT="$(cat /zitadel/bootstrap/admin.pat)"
 IDP_CLIENT_ID="$(cat /zitadel/bootstrap/client-id)"
-IDP_CLIENT_SECRET="$(cat /zitadel/bootstrap/client-secret)"
+# IDP_CLIENT_SECRET="$(cat /zitadel/bootstrap/client-secret)"
 
 # echo $IDP_PAT
 
@@ -308,19 +308,19 @@ echo "Enabling OIDC authentication middleware"
           - Link
         accessControlAllowOriginList:
           - "https://localhost:8000"
+          - "https://localhost:8080"
         accessControlMaxAge: 600
         addVaryHeader: true
         accessControlAllowCredentials: true
     oidc-auth:
       plugin:
         traefik-oidc-auth:
+          Secret: "GfhkqLMQvlTmb0P8a8uqT39vRHQGpw6D"
           LogLevel: DEBUG
           Provider:
-            Url: "${IDP_URL_EXTERNAL}"
+            Url: "${IDP_EXTERNAL_HOST}"
             ClientId: "${IDP_CLIENT_ID}"
             UsePkce: true
-            ValidateIssuer: true
-            ValidIssuer: "${IDP_URL_INTERNAL}"
             InsecureSkipVerify: true
           UnauthorizedBehavior: Forward
           BypassAuthenticationRule: "PathPrefix(\`/\`)"
@@ -331,12 +331,19 @@ echo "Enabling OIDC authentication middleware"
               Value: "{{\`Bearer: {{ .accessToken }}\`}}"
               IncludeWhen: "Public"
           Scopes: ["openid", "profile", "email"]
+          SessionCookie:
+            HttpOnly: false
+            SameSite: lax
+            Secure: true
     user-id:
       plugin:
         user_id_header: {}
 EOF
 
 cat $DYNAMIC_CONFIG
+
+            #ValidateIssuer: true
+            #ValidIssuer: "${IDP_URL_INTERNAL}"
 
 # Finally start CMD
 exec "$@"
