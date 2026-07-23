@@ -306,6 +306,8 @@ echo "Enabling OIDC authentication middleware"
           - Accept
           - Origin
           - Link
+          - X-User-ID
+          - Cache-Control
         accessControlAllowOriginList:
           - "https://localhost:8000"
           - "https://localhost:8080"
@@ -322,6 +324,8 @@ echo "Enabling OIDC authentication middleware"
             ClientId: "${IDP_CLIENT_ID}"
             UsePkce: true
             InsecureSkipVerify: true
+            ValidateIssuer: true
+            ValidIssuer: "${IDP_URL_EXTERNAL}"
           UnauthorizedBehavior: Forward
           BypassAuthenticationRule: "PathPrefix(\`/\`)"
           LoginUri: "/system/login"
@@ -341,9 +345,6 @@ echo "Enabling OIDC authentication middleware"
 EOF
 
 cat $DYNAMIC_CONFIG
-
-            #ValidateIssuer: true
-            #ValidIssuer: "${IDP_URL_INTERNAL}"
 
 # Finally start CMD
 exec "$@"
