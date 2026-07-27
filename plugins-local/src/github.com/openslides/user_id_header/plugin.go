@@ -106,6 +106,7 @@ func (w *responseWriter) Flush() {
 }
 
 func (p *UserIDHeaderInsert) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
 	// Extract User ID
 	user_id := extractUserID(r)
 

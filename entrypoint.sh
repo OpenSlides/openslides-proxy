@@ -129,7 +129,7 @@ experimental:
   plugins:
     traefik-oidc-auth:
       moduleName: github.com/sevensolutions/traefik-oidc-auth
-      version: v0.20.0
+      version: v0.21.0
   localPlugins:
     user_id_header:
       moduleName: github.com/openslides/user_id_header
@@ -325,6 +325,7 @@ echo "Enabling OIDC authentication middleware"
             ValidateIssuer: true
             ValidIssuer: "${IDP_URL_EXTERNAL}"
           UnauthorizedBehavior: Forward
+          UnauthenticatedBehavior: Forward
           BypassAuthenticationRule: "PathPrefix(\`/\`)"
           LoginUri: "/system/login"
           LogoutUri: "/system/logout"
