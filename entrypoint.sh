@@ -58,65 +58,6 @@ IDP_URL_INTERNAL="${IDP_URL_INTERNAL:-h2c://zitadel-api:8080}"
 # Get Zitadel Client ID
 IDP_PAT="$(cat /zitadel/bootstrap/admin.pat)"
 IDP_CLIENT_ID="$(cat /zitadel/bootstrap/client-id)"
-# IDP_CLIENT_SECRET="$(cat /zitadel/bootstrap/client-secret)"
-
-# echo $IDP_PAT
-
-# Import Data
-
-#PAYLOAD=$(cat <<EOF
-#{
-#  "timeout" : "5m",
-#  "dataOrgs": $(cat /import-data.json)
-#}
-#EOF
-#)
-
-#echo $PAYLOAD
-
-#RESPONSE=$(curl -X POST "$IDP_API_URL/admin/v1/import" \
-#  --header "Authorization: Bearer ${IDP_PAT}" \
-#  --header "Content-Type: application/json"\
-#  --header "Host: ${INSTANCE_URL}" \
-#  --data "${PAYLOAD}")
-
-#echo $PAYLOAD
-
-#IDP_APP_INFORMATION=$(curl -sS -X POST \
-#  "${IDP_API_URL}/zitadel.application.v2.ApplicationService/ListApplications" \
-#  -H "Authorization: Bearer $IDP_PAT" \
-#  -H "Content-Type: application/json" \
-#  -H "Host: ${INSTANCE_URL}" \
-#  -d '{}')
-
-#IDP_CLIENT_ID="$(echo $IDP_APP_INFORMATION | jq -r '.applications[0].oidcConfiguration.clientId')"
-#IDP_PROJECT_ID="$(echo $IDP_APP_INFORMATION | jq -r '.applications[0].projectId')"
-#IDP_APPLICATION_ID="$(echo $IDP_APP_INFORMATION | jq -r '.applications[0].applicationId')"
-
-#echo "CLIENT ID: --- $IDP_CLIENT_ID"
-#echo "Project ID: --- $IDP_PROJECT_ID"
-#echo "App ID: --- $IDP_APPLICATION_ID"
-
-#if [ "$IDP_CLIENT_ID" == "null" ]
-#then
-#  echo "No client ID has been returned by zitadel"
-#  echo "Response: $RESPONSE"
-#  sleep infinity
-#fi
-
-#IDP_CLIENT_SECRET=$(curl -sS -X POST \
-#  "${IDP_API_URL}/zitadel.application.v2.ApplicationService/GenerateClientSecret" \
-#  -H "Host:  ${INSTANCE_URL}" \
-#  -H "Authorization: Bearer $IDP_PAT" \
-#  -H "Content-Type: application/json" \
-#  -H "Connect-Protocol-Version: 1" \
-#  -d '{
-#    \"projectId\": \"$IDP_PROJECT_ID\",
-#    \"applicationId\": \"$IDP_APPLICATION_ID\"
-#  }' \
-#| jq -r '.clientSecret')
-
-#echo "CLIENT SECRET: --- $IDP_CLIENT_SECRET"
 
 # Generate base config from template
 envsubst < /templates/traefik.yml > "$TRAEFIK_CONFIG"
