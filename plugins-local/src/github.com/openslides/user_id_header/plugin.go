@@ -59,18 +59,18 @@ func extractUserID(r *http.Request) int {
 		return 0
 	}
 
-	rawOsID, exists := claims["os_id"]
+	rawExternalID, exists := claims["externalId"]
 	if !exists {
-		fmt.Println("header error: missing os_id in token claims")
+		fmt.Println("header error: missing externalId in token claims")
 		return 0
 	}
 
-	osID, err := strconv.Atoi(fmt.Sprintf("%v", rawOsID))
+	externalID, err := strconv.Atoi(fmt.Sprintf("%v", rawExternalID))
 	if err != nil {
-		fmt.Println("header error: invalid os_id value:", rawOsID)
+		fmt.Println("header error: invalid externalId value:", rawExternalID)
 		return 0
 	}
-	return osID
+	return externalID
 }
 
 type responseWriter struct {
